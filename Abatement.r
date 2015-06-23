@@ -307,7 +307,7 @@ mapDemosTot <- function(final.date){
 	
 	bg <- getBGs()
 	bg <- countWithin(within = demos, around = bg, return.type = "poly")
-	p <- mapOPApoly(geom = bg, style = "count.within", breaks = c(-1, 0, 5, 10, 20), fill = rev(heat.colors(5)), labs = c("0", "1 - 5", "6 - 10", "11 - 20", "Greater than 20"), title = "Number of Demolitions Since 2010")
+	p <- mapOPAPoly(geom = bg, style = "count.within", breaks = c(-1, 0, 5, 10, 20), fill = rev(heat.colors(5)), labs = c("0", "1 - 5", "6 - 10", "11 - 20", "Greater than 20"), title = "Number of Demolitions Since 2010")
 	ggsave("Final/Demos-Total.png", plot = p, width = 7.42, height = 5.75)
 }
 mapDemosTot()
@@ -336,8 +336,8 @@ mapDemos2015 <- function(final.date){
 	demo.old <- toSpatialPoints(demo.old, X = "lon", Y = "lat", remove.outliers = TRUE)
 	demo.new <- toSpatialPoints(demo.new, X = "lon", Y = "lat", remove.outliers = TRUE)
 	fill <- c("darkorchid", "darkorange2", "dodgerblue", "chartreuse3")
-	new <- mapOPApoints(pts=demo.new, X="lon", Y="lat",style="program.pretty",fill=fill, size=4)
-	p <- mapOPApoints(pts = demo.old, X = "lon", Y = "lat", style = "program.pretty", fill = fill, old.map = new, size = 2, title="Properties Demolished in 2015") + 
+	new <- mapOPAPoints(pts=demo.new, X="lon", Y="lat",style="program.pretty",fill=fill, size=4)
+	p <- mapOPAPoints(pts = demo.old, X = "lon", Y = "lat", style = "program.pretty", fill = fill, old.map = new, size = 2, title="Properties Demolished in 2015") + 
 	guides(fill=guide_legend(nrow=2,byrow=TRUE))
 	p
 	ggsave("Final/Demos-2015.png", plot = p,  width = 7.42, height = 5.75)
@@ -393,7 +393,7 @@ mapLotClearing <- function(){
 
 	cat("Total lots maintained: ", nrow(maintenance), "\n")
 	
-	p <- mapOPApoly(geom = "parcels", poly.dat = maintenance, id.var = "geopin", style = "program", fill = c("purple","green", "orangered2"), title = "Lot Maintenance in New Orleans")
+	p <- mapOPAPoly(geom = "parcels", poly.dat = maintenance, id.var = "geopin", style = "program", fill = c("purple","green", "orangered2"), title = "Lot Maintenance in New Orleans")
 	ggsave("Final/Lot-Clearing-Map.png", plot = p,  width = 7.42, height = 5.75)
 }
 mapLotClearing()
@@ -407,8 +407,8 @@ mapSales <- function(){
 	sales$Sold <- factor(sales$Sold, levels=c("Sold", "Not Sold")) #adjust order if plotting incorrectly
 	new.sales <- subset(sales, New == "Yes")
 	old.sales <- subset(sales, New == "No")
-	new <- mapOPApoints(new.sales, X = "X", Y = "Y", style = "Sold", fill = c("red", "green"), size = 4, location=c(-90.030368, 29.985083))
-	p <- mapOPApoints(old.sales, title = "Sheriff Sale Results Since 2010", X = "X", Y = "Y", style = "Sold", fill = c("red", "green"), size = 2, location=c(-90.030368, 29.985083), old.map = new)
+	new <- mapOPAPoints(new.sales, X = "X", Y = "Y", style = "Sold", fill = c("red", "green"), size = 4, location=c(-90.030368, 29.985083))
+	p <- mapOPAPoints(old.sales, title = "Sheriff Sale Results Since 2010", X = "X", Y = "Y", style = "Sold", fill = c("red", "green"), size = 2, location=c(-90.030368, 29.985083), old.map = new)
 	ggsave("Final/Sales-Map.png", plot = p,  width = 7.42, height = 5.75)
 }
 mapSales()

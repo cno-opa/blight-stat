@@ -56,8 +56,8 @@ mapNORASales <- function(final.date){
 	nora.new.sp <- geopinsToPoints(nora.new, geopin.col="Geopin")
 	
 	cols <- c("firebrick2", "blue", "green", "orange")
-	new <- mapOPApoints(pts = nora.new.sp, X = "X", Y = "Y", style = "Disposition.Channel", fill = cols, size = 4)
-	p <- mapOPApoints(pts = nora.old.sp, X = "X", Y = "Y", style = "Disposition.Channel", fill = cols, size = 2, old.map = new, title = "NORA Sold Properties in 2015")
+	new <- mapOPAPoints(pts = nora.new.sp, X = "X", Y = "Y", style = "Disposition.Channel", fill = cols, size = 4)
+	p <- mapOPAPoints(pts = nora.old.sp, X = "X", Y = "Y", style = "Disposition.Channel", fill = cols, size = 2, old.map = new, title = "NORA Sold Properties in 2015")
 	ggsave("Final/NORA-Sales.png", plot = p, width = 7.42, height = 5.75)
 }
 mapNORASales(final.date=as.Date("2015-05-30"))
@@ -80,7 +80,7 @@ mapSalesInv <- function(){
 	program.counts <- legendCounts(nora$status)
 	nora$status <- program.counts
 	
-	p <- mapOPApoly(geom = "parcels", poly.dat = nora, id.var = "geopin", style = "status", fill = c("slateblue", "orangered"), title = "NORA Sales since 2010 and \n  Remaining Inventory")
+	p <- mapOPAPoly(geom = "parcels", poly.dat = nora, id.var = "geopin", style = "status", fill = c("slateblue", "orangered"), title = "NORA Sales since 2010 and \n  Remaining Inventory")
 	ggsave("Final/NORA-Sales-and-Inventory.png", plot = p, width = 7.42, height = 5.75)
 }
 mapSalesInv()
