@@ -1,2 +1,3 @@
-# blight-stat
-All the scripts needed to put together BlightSTAT
+# Blight STAT
+
+All the scripts needed to put together Blight STAT
