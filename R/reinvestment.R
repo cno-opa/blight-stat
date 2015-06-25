@@ -57,7 +57,6 @@ mapSalesInv <- function(){
 
 	program.counts <- legendCounts(nora$status)
 	nora$status <- program.counts
-
 	p <- mapOPAPoly(geom = "parcels", poly.dat = nora, id.var = "geopin", style = "status", fill = c("slateblue", "orangered"), title = "NORA Sales since 2010 and \n  Remaining Inventory")
 	ggsave("./output/NORA-Sales-and-Inventory.png", plot = p, width = 7.42, height = 5.75)
 }

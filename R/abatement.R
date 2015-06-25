@@ -371,7 +371,6 @@ mapLotClearing <- function(){
 
 
 	cat("Total lots maintained: ", nrow(maintenance), "\n")
-
 	p <- mapOPAPoly(geom = "parcels", poly.dat = maintenance, id.var = "geopin", style = "program", fill = c("purple","green", "orangered2"), title = "Lot Maintenance in New Orleans")
 	ggsave("./output/Lot-Clearing-Map.png", plot = p,  width = 7.42, height = 5.75)
 }
