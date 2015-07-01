@@ -1,19 +1,22 @@
-#Hearings.r
+# hearings.R
 #
-#Data Sources:
-#==========================
-#https://data.nola.gov/Housing-Land-Use-and-Blight/Code-Enforcement-All-Inspections/uh5a-f7uw -- Total inspections from Socrata
-#SQL query of research
-#https://data.nola.gov/Housing-Land-Use-and-Blight/Code-Enforcement-Active-Pipeline/8pqz-ftzc -- Code Enforcement pipeline
+# Data Sources:
 #==========================
 #
+# https://data.nola.gov/Housing-Land-Use-and-Blight/Code-Enforcement-All-Inspections/uh5a-f7uw -- Total inspections from Socrata SQL query of research
+# https://data.nola.gov/Housing-Land-Use-and-Blight/Code-Enforcement-Active-Pipeline/8pqz-ftzc -- Code Enforcement pipeline
 #
+#==========================
+#
+#
+
+#TODO: replace final.date with r_period type var, collect KPIs
 
 setInternet2(TRUE)
 
 # need to expand window
 plotHearingTotals <- function(final.date){
-	#Pull down data from Socrata
+	# pull down data from Socrata
 	#hrng.url = "https://data.nola.gov/resource/44ct-56tr?$limit=20000&$order=hearingdate DESC"
 	#hrng <- fromJSON(paste0(readLines(hrng.url)))
 	hrng <- csvFromWeb("https://data.nola.gov/api/views/44ct-56tr/rows.csv?accessType=DOWNLOAD")
@@ -21,7 +24,7 @@ plotHearingTotals <- function(final.date){
 	#download.file("https://data.nola.gov/api/views/44ct-56tr/rows.csv?accessType=DOWNLOAD", "file.csv")
 	#hrng <- read.csv("file.csv")
 
-	#Process dates and filter for correct range
+	# process dates and filter for correct range
 	hrng$HearingDate <- as.Date(hrng$HearingDate, "%m/%d/%Y")
 	proj.date <- round_date(seq(final.date, length = 2, by = "+1 month")[2],"month")-1
 	hrng.old <- subset(hrng, HearingDate >= as.Date("2013-01-01") & HearingDate <= final.date)
@@ -36,13 +39,13 @@ plotHearingTotals <- function(final.date){
 	hrng$Month <- as.factor(as.yearmon(hrng$HearingDate))
 	save(hrng, file="./data/hearings.RData")
 
-	#Summarize by month
+	# summarize by month
 	d <- group_by(hrng, Month) %>%
 	summarise(n = n())
 	#d$labels <- c(rep("", nrow(d)-2), d$n[nrow(d)-1], paste(d$n[nrow(d)], "\n proj."))
 
-	#Make plots
-	p <- lineOPA(d, "Month", "n", "Number of Hearings", labels = "n", last_label = TRUE, lab.size = 3) 
+	# make plots
+	p <- lineOPA(d, "Month", "n", "Number of Hearings", labels = "n", last_label = TRUE, lab.size = 3)
 	# geom_segment(aes(x = 1, xend = 12, y = 5000/12, yend = 5000/12), linetype = "dashed", color = "black") +
 	# geom_segment(aes(x = 13, xend = nrow(d), y = 4000/12, yend = 4000/12) , linetype = "dashed", color = "black")
 
@@ -57,24 +60,19 @@ plotHearingResults <- function(final.date){
 	load("./data/hearings.RData")
 	hrng <- subset(hrng, HearingDate >= as.Date("2013-01-01") & HearingDate <= final.date)
 
-	#Set up columns with judgment types
-	hrng$Guilty <- (grepl("Guilty", hrng$Judgment, ignore.case = TRUE) &
-		hrng$Judgment != "Guilty: Abated" & hrng$Judgment != "Reset: Conditional Guilty")*1
-	hrng$Violations.Abated <- (grepl("compli", hrng$Judgment, ignore.case = TRUE) |
-		hrng$Judgment == "Guilty: Abated")*1
-	hrng$Work.In.Progress <- (hrng$Judgment == "Reset: Work In Progress" |
-		hrng$Judgment == "Reset: Conditional Guilty")*1
-	hrng$Reset.Reinspection <- (grepl("Inspect",hrng$Judgment, ignore.case = TRUE))*1
-	hrng$Reset.Notice <- (grepl("Notice",hrng$Judgment, ignore.case = TRUE))*1
-	hrng$Pending <- (grepl("Pending", hrng$Judgment, ignore.case = TRUE))*1
+	# set up columns with judgment types
+	hrng$Guilty <- (grepl("Guilty", hrng$Judgment, ignore.case = TRUE) & hrng$Judgment != "Guilty: Abated" & hrng$Judgment != "Reset: Conditional Guilty") * 1
+	hrng$Violations.Abated <- (grepl("compli", hrng$Judgment, ignore.case = TRUE) | hrng$Judgment == "Guilty: Abated") * 1
+	hrng$Work.In.Progress <- (hrng$Judgment == "Reset: Work In Progress" | hrng$Judgment == "Reset: Conditional Guilty") * 1
+	hrng$Reset.Reinspection <- (grepl("Inspect",hrng$Judgment, ignore.case = TRUE)) * 1
+	hrng$Reset.Notice <- (grepl("Notice",hrng$Judgment, ignore.case = TRUE)) * 1
+	hrng$Pending <- (grepl("Pending", hrng$Judgment, ignore.case = TRUE)) * 1
 	hrng <- subset(hrng, Pending == 0)
 	judgments <- subset(hrng, select=c(Guilty, Violations.Abated, Work.In.Progress, Reset.Reinspection, Reset.Notice, Pending))
 	hrng$Reset.Other <- 1-rowSums(judgments)
 	save(hrng, file="./data/hearing-results.RData")
 
-	#Get percent hearing results by month (with all undesirable resets as one category)
-
-
+	# get percent hearing results by month (with all undesirable resets as one category)
 	d <- group_by(hrng, Month) %>%
 	summarise(mean(Guilty), mean(Violations.Abated), mean(Work.In.Progress), mean(Reset.Reinspection), mean(Reset.Notice), mean(Reset.Other))
 	names(d) <- c("Month","Guilty","Violations.Abated","Work.In.Progress","Reset.Reinspection","Reset.Notice","Reset.Other")
@@ -90,39 +88,35 @@ plotHearingResults <- function(final.date){
 	dm$lab <- paste(round(100*dm$value, 1), "%", sep="")
 	dm$lab[1:(length(dm$lab)-4)] <- rep("", length(dm$lab)-4)
 
-	#make plots
-	p <- area100pOPA(dm, x = "Month", y = "value", group = "variable", title = "Hearing Results",
-	legend.labels=c("Guilty","Violations Abated","Work in Progress","Other Reset/Dismissed"), percent = TRUE)
-	p <- p + geom_text(aes_string(label = "lab", y = "pos", color = "variable"), size = 3, hjust = 1, vjust = -1) +
-	scale_colour_manual(values = c("grey77", "grey77", "grey30", "grey30"), guide = FALSE)
+	# make plots
+	p <- area100pOPA(dm, x = "Month", y = "value", group = "variable", title = "Hearing Results", legend.labels=c("Guilty","Violations Abated","Work in Progress","Other Reset/Dismissed"), percent = TRUE)
+	p <- p +
+			 geom_text(aes_string(label = "lab", y = "pos", color = "variable"), size = 3, hjust = 1, vjust = -1) +
+			 scale_colour_manual(values = c("grey77", "grey77", "grey30", "grey30"), guide = FALSE)
 
 	p <- buildChart(p)
-	p
 	ggsave("./output/Hearing-Results.png", plot = p, width = 7.42, height = 5.75)
 }
 plotHearingResults(final.date=as.Date("2015-05-31"))
 
-##bar chart version
-plotHearingResultsBar <- function(final.date){
+# bar chart version
+plotHearingResultsBar <- function(final.date) {
 	load("./data/hearings.RData")
 	hrng <- subset(hrng, HearingDate >= as.Date("2013-01-01") & HearingDate <= final.date)
 
-	#Set up columns with judgment types
-	hrng$Guilty <- (grepl("Guilty", hrng$Judgment, ignore.case=TRUE) &
-		hrng$Judgment!="Guilty: Abated" & hrng$Judgment!="Reset: Conditional Guilty")*1
-	hrng$Violations.Abated <- (grepl("compli", hrng$Judgment, ignore.case=TRUE) |
-		hrng$Judgment=="Guilty: Abated")*1
-	hrng$Work.In.Progress <- (hrng$Judgment=="Reset: Work In Progress" |
-		hrng$Judgment=="Reset: Conditional Guilty")*1
-	hrng$Reset.Reinspection <- (grepl("Inspect",hrng$Judgment, ignore.case=TRUE))*1
-	hrng$Reset.Notice <- (grepl("Notice",hrng$Judgment, ignore.case=TRUE))*1
-	hrng$Pending <- (grepl("Pending", hrng$Judgment, ignore.case=TRUE))*1
+	# set up columns with judgment types
+	hrng$Guilty <- (grepl("Guilty", hrng$Judgment, ignore.case=TRUE) & hrng$Judgment!="Guilty: Abated" & hrng$Judgment!="Reset: Conditional Guilty") * 1
+	hrng$Violations.Abated <- (grepl("compli", hrng$Judgment, ignore.case=TRUE) | hrng$Judgment=="Guilty: Abated") * 1
+	hrng$Work.In.Progress <- (hrng$Judgment=="Reset: Work In Progress" | hrng$Judgment=="Reset: Conditional Guilty") * 1
+	hrng$Reset.Reinspection <- (grepl("Inspect",hrng$Judgment, ignore.case=TRUE)) * 1
+	hrng$Reset.Notice <- (grepl("Notice",hrng$Judgment, ignore.case=TRUE)) * 1
+	hrng$Pending <- (grepl("Pending", hrng$Judgment, ignore.case=TRUE)) * 1
 	hrng <- subset(hrng, Pending == 0)
 	judgments <- subset(hrng, select=c(Guilty, Violations.Abated, Work.In.Progress, Reset.Reinspection, Reset.Notice, Pending))
 	hrng$Reset.Other <- 1-rowSums(judgments)
 	save(hrng, file="./data/hearing-results.RData")
 
-	#Get percent hearing results by month (with all undesirable resets as one category)
+	# get percent hearing results by month (with all undesirable resets as one category)
 	d <- group_by(hrng, Month) %>%
 	summarise(sum(Guilty), sum(Violations.Abated), sum(Work.In.Progress), sum(Reset.Reinspection), sum(Reset.Notice), sum(Reset.Other))
 	names(d) <- c("Month","Guilty","Violations.Abated","Work.In.Progress","Reset.Reinspection","Reset.Notice","Reset.Other")
@@ -133,7 +127,7 @@ plotHearingResultsBar <- function(final.date){
 	d$Reset <- rowSums(resets)
 	dm <- melt(d, id="Month")
 
-	#make plots
+	# make plots
 	p <- barOPA(data = dm, x = "Month", y = "value", title = "Hearing Results", fill = "variable", position = "stack", legend.labels=c("Guilty","Violations Abated","Work in Progress","Other Reset/Dismissed"))
 	p <- buildChart(p)
 	p
@@ -141,8 +135,8 @@ plotHearingResultsBar <- function(final.date){
 }
 plotHearingResultsBar(final.date=as.Date("2015-05-31"))
 
-plotHearingResets <- function(final.date){ #need to add KPI for resets
-	#group by reset type
+plotHearingResets <- function(final.date) {
+	# group by reset type
 	load("./data/hearing-results.RData")
 	hrng.2015 <- subset(hrng, HearingDate >= as.Date("2015-01-01"))
 	reinsp.tot <- nrow(subset(hrng.2015, Reset.Reinspection == 1))/nrow(hrng.2015)
@@ -166,9 +160,9 @@ plotHearingResets <- function(final.date){ #need to add KPI for resets
 	position="stack", legend.labels=c("No Resinspection","Insufficient Notice","Others (External Factors)"))
 	p <- p + scale_fill_manual(values = fill, labels = c("No Resinspection","Insufficient Notice","Others (External Factors)"))
 	p <- p + geom_text(aes_string(label = "lab", y = "pos", color = "variable"), size = 2.5) +
-	scale_colour_manual(values = c("grey30", "grey30", "grey30"), guide = FALSE)
+			 scale_colour_manual(values = c("grey30", "grey30", "grey30"), guide = FALSE)
 	p <- buildChart(p)
-	p
+
 	ggsave("./output/Hearing-Resets.png", plot = p, width = 7.42, height = 5.75)
 }
 plotHearingResets(final.date=as.Date("2015-05-31"))
@@ -186,20 +180,19 @@ plotAbatement <- function(){ #Lien Waivers csv must be updated(even if 0)
 	abate.2015 <- d[grepl("2015", d$Month),]
 	cat("KPI -- Number of properties abated by owners: ", sum(abate.2015$value), "\n")
 
-	#make plots
+	# make plots
 	d <- d[order(d$Month),]
 	d$pos <- positionLabels(dat = d$value, cats = 2)
 	d$lab <- d$value
 	d$lab[which(d$lab == 0)] <- ""
 
-	p <- barOPA(data=d, x="Month", y="value", title="Voluntary Abatement",
-	fill="variable", position="stack", legend.labels=c("Abated at Hearing","Approved Lien Waivers"))
+	p <- barOPA(data=d, x="Month", y="value", title="Voluntary Abatement", fill="variable", position="stack", legend.labels=c("Abated at Hearing","Approved Lien Waivers"))
 	p <- p + geom_hline(yintercept = 750/12, linetype = "dashed")
 	p <- p + geom_text(aes_string(label = "lab", y = "pos", color = "variable"), size = 3) +
-	scale_colour_manual(values = c("grey77", "grey30"), guide = FALSE)
+			 scale_colour_manual(values = c("grey77", "grey30"), guide = FALSE)
 
 	p <- buildChart(p)
-	p
+
 	ggsave("./output/Abatement-Totals.png", plot = p, width = 7.42, height = 5.75)
 }
 plotAbatement()

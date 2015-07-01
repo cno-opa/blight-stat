@@ -16,9 +16,11 @@
 # ==========================
 #
 
+#TODO: replace final.date with user-inputted r_period type variable. print out KPIs at end rather than while script runs
+
 setInternet2(TRUE)
 
-#Defining projections
+# defining projections
 NOLA.proj <- CRS("+proj=lcc +lat_1=29.3 +lat_2=30.7 +lat_0=28.5 +lon_0=-91.33333333333333 +x_0=999999.9999999999 +y_0=0 +datum=NAD83 +units=us-ft +no_defs +ellps=GRS80 +towgs84=0,0,0")
 longlat <- CRS("+proj=longlat +datum=NAD83 +no_defs +ellps=GRS80 +towgs84=0,0,0")
 
@@ -92,8 +94,7 @@ plotReviewProgress <- function(final.date, cache = FALSE){
 
 	# get counts from current month
 	status <- getAbatementReview()
-	d.hr <- data.frame(Month = status$d.hr$Month,
-		Has.Review = rowSums(status$d.hr[,2:ncol(status$d.hr)]))
+	d.hr <- data.frame(Month = status$d.hr$Month, Has.Review = rowSums(status$d.hr[,2:ncol(status$d.hr)]))
 	d.hr <- d.hr[,c("Month", "Has.Review")]
 	d <- merge(x = status$d.cp, y = status$d.cu, all = TRUE)
 	d <- merge(x = d, y = d.hr, all = TRUE)
@@ -135,8 +136,8 @@ plotReviewProgress <- function(final.date, cache = FALSE){
 	d.tot$group <- rep("l", nrow(d.tot))
 	fill <- rep("firebrick", nrow(d.tot))
 	p <- barOPA(data = d.tot, x = "Month", y = "Needs.Review", title = "Number of Guilty Judgments Awaiting Abatement Reviews", fill = "group")
-	p <- p + scale_fill_manual(values = fill, guide = FALSE)+
-	geom_text(aes_string(label = "Needs.Review"), size = 4.5, vjust = 1.8, col = "grey77")
+	p <- p + scale_fill_manual(values = fill, guide = FALSE) +
+			 geom_text(aes_string(label = "Needs.Review"), size = 4.5, vjust = 1.8, col = "grey77")
 	p <- buildChart(p)
 	p
 
@@ -165,11 +166,11 @@ plotReviewOutcomes()
 
 
 plotSaleReview <- function(){
-	# Plots the legal review outcome for properties flagged for sale
-	# For now we have to manually update the Legal-Review.csv spreadsheet, with data sent by Code Enforcement
-	# Data is starting to be tracked in LAMA, so in the future it can be pulled from there
+	# plots the legal review outcome for properties flagged for sale
+	# for now we have to manually update the Legal-Review.csv spreadsheet, with data sent by Code Enforcement
+	# data is starting to be tracked in LAMA, so in the future it can be pulled from there
 
-	# Get and process data
+	# get and process data
 	review <- read.csv("./data/Legal-Review.csv")
 	review$Month <- as.Date(review$Month,  "%m/%d/%Y")
 	review$Month <- as.factor(as.yearmon(review$Month))
@@ -178,7 +179,7 @@ plotSaleReview <- function(){
 	sale.melt <- melt(sale, id = "Month")
 	sale.melt[is.na(sale.melt)] <- 0
 
-	# Make chart
+	# make chart
 	sale.melt <- sale.melt[order(sale.melt$Month),]
 	sale.melt$pos <- positionLabels(dat = sale.melt$value, cats = 5)
 	sale.melt$lab <- sale.melt$value
@@ -198,11 +199,11 @@ plotSaleReview <- function(){
 plotSaleReview()
 
 plotDemoReview <- function(){
-	# Plots the legal review outcome for properties flagged for demolition
-	# For now we have to manually update the Legal-Review.csv spreadsheet, with data sent by Code Enforcement
-	# Data is starting to be tracked in LAMA, so in the future it can be pulled from there
+	# plots the legal review outcome for properties flagged for demolition
+	# for now we have to manually update the Legal-Review.csv spreadsheet, with data sent by Code Enforcement
+	# data is starting to be tracked in LAMA, so in the future it can be pulled from there
 
-	# Get and process data
+	# get and process data
 	review <- read.csv("./data/Legal-Review.csv")
 	review$Month <- as.Date(review$Month,  "%m/%d/%Y")
 	review <- subset(review, Month >= as.Date("2015-01-01"))
@@ -212,7 +213,7 @@ plotDemoReview <- function(){
 	sale.melt <- melt(sale, id = "Month")
 	sale.melt[is.na(sale.melt)] <- 0
 
-	# Make chart
+	# make chart
 	sale.melt <- sale.melt[order(sale.melt$Month),]
 	sale.melt$pos <- positionLabels(dat = sale.melt$value, cats = 5)
 	sale.melt$lab <- sale.melt$value
@@ -232,8 +233,8 @@ plotDemoReview <- function(){
 plotDemoReview()
 
 plotSSCollections <- function(){
-	# Plots the collections from sheriff sales
-	# We have to manually update the Legal-Review.csv spreadsheet, with data sent by Code Enforcement
+	# plots the collections from sheriff sales
+	# we have to manually update the Legal-Review.csv spreadsheet, with data sent by Code Enforcement
 
 	coll <- read.csv("./data/SheriffSaleCollections.csv")
 	coll$Month <- as.Date(coll$Month,"%m/%d/%Y")
@@ -241,7 +242,7 @@ plotSSCollections <- function(){
 	m <- melt(coll, id="Month")
 	m[is.na(m)] <- 0
 
-	#Make chart
+	# make chart
 	m <- m[order(m$Month),]
 	m$pos <- positionLabels(dat = m$value, cats = 3)
 	m$lab <- m$value
@@ -260,9 +261,9 @@ plotSSCollections <- function(){
 plotSSCollections()
 
 getDemos <- function(){
-	# Gets and cleans demos from data.nola.gov
-	# We are responsible for updating and maintaining the spreadsheet that this pulls from
-	# To update the sheet, run Demos-for-Socrata.r (that file has full instructions)
+	# gets and cleans demos from data.nola.gov
+	# we are responsible for updating and maintaining the spreadsheet that this pulls from
+	# to update the sheet, run Demos-for-Socrata.r (that file has full instructions)
 
 	demo.url <- "http://data.nola.gov/resource/e3wd-h7q2.json?$limit=20000"
 	demo <- fromJSON(paste0(readLines(demo.url)))
@@ -287,7 +288,7 @@ getDemos <- function(){
 }
 
 mapDemosTot <- function(final.date){
-	# Makes a choropleth map with total demolitions by block group
+	# makes a choropleth map with total demolitions by block group
 
 	demos <- getDemos()
 	demos <- toSpatialPoints(demos, X = "lon", Y = "lat", remove.outliers = TRUE)
@@ -302,7 +303,7 @@ mapDemosTot <- function(final.date){
 mapDemosTot()
 
 mapDemos2015 <- function(final.date){
-	# Maps demolitions by type for 2015 (will have to update script in 2016 if we're still using this map)
+	# maps demolitions by type for 2015 (will have to update script in 2016 if we're still using this map)
 
 	demos <- getDemos()
 	demos.15 <- subset(demos, demolition_start>=as.Date("2015-01-01"))
@@ -311,7 +312,7 @@ mapDemos2015 <- function(final.date){
 
 	program.count <- table(demos.15$program.pretty)
 	program.pretty <- demos.15$program.pretty
-	for(i in 1:length(program.pretty)){
+	for(i in 1:length(program.pretty)) {
 		count.ind <- which(names(program.count) == program.pretty[i])
 		program.pretty[i] <- paste0(program.pretty[i], " (", program.count[count.ind],")")
 	}
@@ -327,8 +328,8 @@ mapDemos2015 <- function(final.date){
 	fill <- c("darkorchid", "darkorange2", "dodgerblue", "chartreuse3")
 	new <- mapOPAPoints(pts=demo.new, X="lon", Y="lat",style="program.pretty",fill=fill, size=4)
 	p <- mapOPAPoints(pts = demo.old, X = "lon", Y = "lat", style = "program.pretty", fill = fill, old.map = new, size = 2, title="Properties Demolished in 2015") +
-	guides(fill=guide_legend(nrow=2,byrow=TRUE))
-	p
+			 guides(fill=guide_legend(nrow=2,byrow=TRUE))
+
 	ggsave("./output/Demos-2015.png", plot = p,  width = 7.42, height = 5.75)
 }
 mapDemos2015(final.date = as.Date("2015-05-31"))
@@ -338,7 +339,7 @@ plotCNAP <- function(){
 	cnap$Month <- as.Date(cnap$Month,"%m/%d/%Y")
 	cnap$Month <- as.factor(as.yearmon(cnap$Month))
 
-	# Make plots
+	# make plots
 	p <- lineOPA(cnap, "Month", "CNAP", "Properties Receiving Routine Maintenance Through CNAP", labels = "CNAP", last_label = TRUE)
 	p <- buildChart(p)
 	ggsave("./output/CNAP-Totals.png", plot = p,  width = 7.42, height = 5.75)
@@ -346,7 +347,7 @@ plotCNAP <- function(){
 plotCNAP()
 
 mapLotClearing <- function(){
-	# Maps lot clearing from NORA, Ch. 66 and CNAP
+	# maps lot clearing from NORA, Ch. 66 and CNAP
 	# CNAP still needs to be added (working on getting a reliable feed from data.nola.gov)
 
 	# get NORA data
@@ -366,7 +367,7 @@ mapLotClearing <- function(){
 	# get CNAP data (change this to download from web when available)
 	CNAP <- readOGR(dsn = paste0(getwd(), "/Data"), layer = "Parcels_CNAP")
 	parcels <- getParcels()
-	# Get GEOPINs and Council Districts
+	# get GEOPINs and Council Districts
 	CNAP.geopin <- over(geometry(CNAP), parcels)
 	geopin <- as.numeric(CNAP.geopin$GEOPIN)
 	program <- rep("CNAP", nrow(CNAP))
