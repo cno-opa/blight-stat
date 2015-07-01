@@ -1,41 +1,47 @@
-#Research.r
+# research.R
 #
-#Data Sources:
-#==========================
-#SQL query of research completed
-#https://data.nola.gov/Housing-Land-Use-and-Blight/Code-Enforcement-Active-Pipeline/8pqz-ftzc -- Code Enforcement pipeline
+# Data Sources:
 #==========================
 #
+# SQL query of research completed
+# https://data.nola.gov/Housing-Land-Use-and-Blight/Code-Enforcement-Active-Pipeline/8pqz-ftzc -- Code Enforcement pipeline
+# "Research.csv"
+# "HistoricalResearchBacklog.csv"
 #
+#==========================
+#
+#
+
+#TODO: replace final.date with r_period type var, collect KPIs
 
 setInternet2(TRUE)
 
 plotResearchTotals <- function(final.date){
-	#Read in data and process dates (for now we need to use a SQL query because Socrata doesn't have a research dataset)
-	#To get data, run SQL query, change date formats in Excel to "Short Date" and save as Research.csv
-	#If/when this is uploaded to socrata we will need to adjust column names
+	# read in data and process dates (for now we need to use a SQL query because Socrata doesn't have a research dataset)
+	# to get data, run SQL query, change date formats in Excel to "Short Date" and save as Research.csv
+	# if/when this is uploaded to socrata we will need to adjust column names
 	rsrch <- read.csv("./data/Research.csv")
 	rsrch$Research.Completed <- as.Date(rsrch$Research.Date,"%m/%d/%Y")
 
-	#Filter for correct range and de-duplicate
+	# filter for correct range and de-duplicate
 	rsrch <- subset(rsrch,Research.Completed>=as.Date("2013-01-01") & Research.Completed <= final.date)
 	rsrch$Month <- as.factor(as.yearmon(rsrch$Research.Completed))
 	rsrch <- rsrch[order(rsrch$Research.Completed),]
 	rsrch <- subset(rsrch,!duplicated(rsrch$CaseNo))
 
-	#Summarize by month
+	# summarize by month
 	d <- group_by(rsrch, Month) %>%
-	summarise(n = n())
+			 summarise(n = n())
 	d.2015 <- d[which(d$Month=="Jan 2015"):nrow(d),]
 	cat("KPI -- Total 2015 Research:", sum(d.2015$n), "\n")
 
 
-	#Make plots
+	# make plots
 	theme_set(theme_opa())
 	p <- lineOPA(d, "Month", "n", "Number of Cases Researched", labels = "format(n, big.mark = \",\", scientific = FALSE)")
 	p <- p + geom_hline(yintercept = 4000/12, linetype = "dashed")
 	p <- buildChart(p)
-	p
+
 	ggsave("./output/Research-Totals.png", plot = p, width = 7.42, height = 5.75)
 }
 plotResearchTotals(final.date=as.Date("2015-05-31"))
@@ -53,61 +59,57 @@ rsrchAgeBins <- function(start.date){
 	return(final.year)
 }
 
-##Notes:
-#Adjusted barOPA code and need to update on GitHub
-#Need to change colors so that red is on top
 plotResearchTime <- function(final.date){
-	#Read in data and process dates (for now we need to use a SQL query because the Socrata dataset doesn't contain a column for the date an inspection was filed)
-	#To get data, run SQL query, change date formats in Excel to "Short Date" and save as Inspections.csv
-	#If/when this is uploaded to socrata we will need to adjust column names
+	# read in data and process dates (for now we need to use a SQL query because the Socrata dataset doesn't contain a column for the date an inspection was filed)
+	# to get data, run SQL query, change date formats in Excel to "Short Date" and save as Inspections.csv
+	# if/when this is uploaded to socrata we will need to adjust column names
 	rsrch <- read.csv("./data/Research.csv")
 	rsrch$Research.Completed <- as.Date(rsrch$Research.Date,"%m/%d/%Y")
 	rsrch$Case.Established <- as.Date(rsrch$Case.Established,"%m/%d/%Y")
 
-	#Filter for research completed in the relevant date range (past 6 months)
+	# filter for research completed in the relevant date range (past 6 months)
 	start.date <- round_date(seq(final.date, length = 2, by = "-6 months")[2],"month")
 	rsrch <- subset(rsrch,Research.Completed>=start.date & Research.Completed <= final.date)
 
-	#Group by bins of the year that cases were filed
+	# group by bins of the year that cases were filed
 	rsrch$Year.Opened <- rsrchAgeBins(rsrch$Case.Established)
 	rsrch$Month <- as.factor(as.yearmon(rsrch$Research.Completed))
 	d <- group_by(rsrch, Month, Year.Opened) %>%
-	summarise(n = n())
+			 summarise(n = n())
 
 	pos.1 <- positionLabels(dat = d$n[1:2], cats = 2)
 	pos.2 <- positionLabels(dat = d$n[3:length(d$n)], cats = 3)
 	d$pos <- c(pos.1, pos.2)
 
-	p <- barOPA(data=d, x="Month", y="n", title="Filing Year of Cases Researched",
-		fill="Year.Opened", position="stack")
+	p <- barOPA(data=d, x="Month", y="n", title="Filing Year of Cases Researched", fill="Year.Opened", position="stack")
 	p <- p + geom_text(aes_string(label = "n", y = "pos", color = "Year.Opened"), size = 3) + scale_colour_manual(values = c("grey77", "grey77", "grey30"), guide = FALSE)
 	p <- buildChart(p)
-	p
+
 	ggsave("./output/Research-Time.png", plot = p, width = 7.42, height = 5.75)
 }
 plotResearchTime(final.date=as.Date("2015-05-30"))
 
 getResearchBacklog <- function(final.date){
-	#Pull down data from Socrata
+	# pull down data from Socrata
 	pipeline.url <- "https://data.nola.gov/api/views/8pqz-ftzc/rows.csv?accessType=DOWNLOAD"
 	#pipeline.url <- "https://data.nola.gov/api/views/8pqz-ftzc/rows.json?accessType=DOWNLOAD"
 	pipeline <- csvFromWeb(pipeline.url)
 	names(pipeline) <- slugify(names(pipeline))
 	pipeline <- subset(pipeline, o_c=="Open")
 
-	#Process dates and filter for newly filed cases
+	# process dates and filter for newly filed cases
 	pipeline$casefiled <- toDate(pipeline$casefiled)
 	p.rsrch <- subset(pipeline, stage == "2 - Title Research")
 	p.rsrch <- subset(p.rsrch, ymd(casefiled) >= ymd("2013-08-30") & ymd(casefiled) <= ymd(final.date)) #cases before this date will be restarted
 
-	#Deduplicate
+	# deduplicate
 	dupes <- findDupes(p.rsrch$geopin, pipeline$geopin)
 	p.rsrch <- p.rsrch[-which(p.rsrch$geopin %in% dupes),]
 
-	#Group by bins of the number of days to complete inspections
+	# group by bins of the number of days to complete inspections
 	p.rsrch$Year.Opened <- rsrchAgeBins(p.rsrch$casefiled)
 	d <- group_by(p.rsrch, Year.Opened) %>%
-	summarise(n = n())
+			 summarise(n = n())
 	dates <- rep(final.date,nrow(d))
 	Month <- as.factor(as.yearmon(dates))
 	d <- cbind(Month, d)
@@ -134,12 +136,13 @@ plotResearchBacklog <- function(final.date, cache){
 	pos.2 <- positionLabels(dat = full.backlog$n[3:length(full.backlog$n)], cats = 3)
 	full.backlog$pos <- positionLabels(dat = full.backlog$n, cats = 3)
 
-	if(cache==TRUE){write.csv(full.backlog,"./data/HistoricalResearchBacklog.csv")}
-	p <- barOPA(data=full.backlog, x="Month", y="n", title="Filing Year of Open Cases",
-		fill="Year.Opened", position="stack")
+	if(cache == TRUE) {
+		write.csv(full.backlog,"./data/HistoricalResearchBacklog.csv")
+	}
+	p <- barOPA(data=full.backlog, x="Month", y="n", title="Filing Year of Open Cases", fill="Year.Opened", position="stack")
 	p <- p + geom_text(aes_string(label = "n", y = "pos", color = "Year.Opened"), size = 3) + scale_colour_manual(values = c("grey77", "grey77", "grey30"), guide = FALSE)
 	p <- buildChart(p)
-	p
+
 	ggsave("./output/Research-Backlog.png", plot = p, width = 7.42, height = 5.75)
 }
 plotResearchBacklog(final.date=as.Date("2015-05-30"), cache=FALSE) #set to true to save a version of the backlog with new monthly data

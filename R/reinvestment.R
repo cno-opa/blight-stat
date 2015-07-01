@@ -1,12 +1,19 @@
-## Reinvestment.r
+# reinvestment.R
+#
+# Data Sources:
+#==========================
+#
+# https://data.nola.gov/api/views/hpm5-48nj
+#
+#==========================
+#
 
-#must run plotters.r
-#must run Spatial-OPA.r
+#TODO: replace final.date with r_period type var, collect KPIs
 
 setInternet2(TRUE)
 
 mapNORASales <- function(final.date){
-	#Get and process data
+	# get and process data
 	nora.sold <- csvFromWeb("https://data.nola.gov/api/views/hpm5-48nj/rows.csv?accessType=DOWNLOAD")
 
 	##link not working for some reason, which makes csvFromWeb not work
@@ -17,19 +24,19 @@ mapNORASales <- function(final.date){
 	#nora.sold <- fromJSON(paste0(readLines(nora.sold.url)))
 
 	#nora.sold$Sale.Date=as.Date(nora.sold$Sale.Date, "%m/%d/%Y") ## use this line if pulling from csv
-	nora.sold$Sale.Date=as.Date(nora.sold$Sale.Date, "%m/%d/%y") ##use this line if pulling directly from the web...bizarrely there are some differences between the two formats
+	nora.sold$Sale.Date <- as.Date(nora.sold$Sale.Date, "%m/%d/%y") ##use this line if pulling directly from the web...bizarrely there are some differences between the two formats
 	nora.sold <- subset(nora.sold, Sale.Date > as.Date("2010-01-01"))
 	nora.2015 <- subset(nora.sold, Sale.Date >= as.Date("2015-01-01"))
 	cat("Number of sold properties in 2015:", nrow(nora.2015), "\n")
 
-	#Divide last month of sales
+	# divide last month of sales
 	program.counts <- legendCounts(nora.2015$Disposition.Channel)
 	nora.2015$Disposition.Channel <- program.counts
 	new.month <- seq(final.date, length = 2, by = "-1 month")[2]
 	nora.old <- subset(nora.2015, Sale.Date < new.month)
 	nora.new <- subset(nora.2015, Sale.Date >= new.month)
 
-	#Make into spatial objects and plot
+	# make into spatial objects and plot
 	nora.old.sp <- geopinsToPoints(nora.old, geopin.col="Geopin")
 	nora.new.sp <- geopinsToPoints(nora.new, geopin.col="Geopin")
 
