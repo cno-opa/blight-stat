@@ -1,9 +1,19 @@
-#Abatement.r
+# abatement.R
 #
-#Data Sources:
-#==========================
-
-#==========================
+# Data Sources:
+# ==========================
+#
+# LAMA SQL query "05-Hearing Details-LAMA Comprehensive Report"
+# LAMA SQL query "Abatement Decision Tool"
+# LAMA SQL query "CE Administrative Reviews"
+# "JudgmentsForAbatementReview.csv"
+# "SheriffSaleCollections.csv"
+# "Legal-Review.csv"
+# Socrata demolitions dataset
+# "CNAP-totals.csv"
+# "CG66-GEOPINS.csv"
+#
+# ==========================
 #
 
 setInternet2(TRUE)
@@ -13,14 +23,9 @@ NOLA.proj <- CRS("+proj=lcc +lat_1=29.3 +lat_2=30.7 +lat_0=28.5 +lon_0=-91.33333
 longlat <- CRS("+proj=longlat +datum=NAD83 +no_defs +ellps=GRS80 +towgs84=0,0,0")
 
 getAbatementReview <- function(){
-	#Finds outcomes of all Code Enforcement judgments (closed, reviewed, needing reviews).
-	#Data comes from 3 SQL queries:
-	#1. 05-Hearing Details-LAMA Comprehensive Report -- judgments
-		#Considered range of judgments should end 4 months before reporting period and start 6 months before that
-	#2. Abatement Decision Tool -- reviews done through the abatement tool
-	#3. CE Administrative Reviews -- reviews performed by senior staff reviews
+	# finds outcomes of all Code Enforcement judgments (closed, reviewed, needing reviews).
 
-	#read in and clean data
+	# read in and clean data
 	judgments <- read.csv("./data/JudgmentsForAbatementReview.csv")
 
 	#judgments <- csvFromWeb("https://data.nola.gov/api/views/44ct-56tr/rows.csv?accessType=DOWNLOAD") ###new
@@ -31,9 +36,9 @@ getAbatementReview <- function(){
 	abatement.tool <- read.csv("./data/AbatementTool.csv")
 	admin.reviews <- read.csv("./data/AdminReviews.csv")
 	names(abatement.tool)[which(names(abatement.tool)=="CaseID")] <- "CaseNumber" #change SQL script and these won't be necessary
-	names(abatement.tool)[which(names(abatement.tool)=="Recommendation")] <- "AbatementRecommendation"###
-	names(admin.reviews)[which(names(admin.reviews)=="NumString")] <- "CaseNumber"###
-	names(admin.reviews)[which(names(admin.reviews)=="Status")] <- "ReviewRecommendation"###
+	names(abatement.tool)[which(names(abatement.tool)=="Recommendation")] <- "AbatementRecommendation"
+	names(admin.reviews)[which(names(admin.reviews)=="NumString")] <- "CaseNumber"
+	names(admin.reviews)[which(names(admin.reviews)=="Status")] <- "ReviewRecommendation"
 	abatement.tool <- subset(abatement.tool, AbatementRecommendation %in% c("Clear Lot", "Complete", "Demolish", "Sell"))
 	admin.reviews <- subset(admin.reviews, ReviewRecommendation %in% c("Clear Lot", "Demolish", "Sell", "Hold", "On Hold"))
 	abatement.tool$AbatementRecommendation <- as.character(abatement.tool$AbatementRecommendation)
@@ -41,46 +46,51 @@ getAbatementReview <- function(){
 	abatement.tool$AbatementRecommendation[which(as.character(abatement.tool$AbatementRecommendation) %in% "Complete")] <- "Occupied"
 	admin.reviews$ReviewRecommendation[which(admin.reviews$ReviewRecommendation %in% c("Hold", "On Hold", "Clear Lot"))] <- "Sell"
 
-	#categorize closed cases
+	# categorize closed cases
 	#closed.paid <- subset(judgments, O.C=="Closed" & UnpaidFees == 0)
 	#closed.unpaid <- subset(judgments, O.C=="Closed" & UnpaidFees > 0)
-	closed <- subset(judgments, O.C=="Closed") #####new
+	closed <- subset(judgments, O.C=="Closed")
 
-	#categorize open cases
+	# categorize open cases
 	open <- subset(judgments, O.C=="Open")
 	judgments.reviews.1 <- merge(x=open, y=abatement.tool, all.x=TRUE, by="CaseNumber")
 	judgments.reviews <- merge(x=judgments.reviews.1, y=admin.reviews, all.x=TRUE, by="CaseNumber")
-	###judgments.reviews <- subset(judgments.reviews, select=c(CaseNumber, StreetAddress, HearingDate, Month, AbatementRecommendation, ReviewRecommendation, XPos, YPos, GeoPIN))
+	#judgments.reviews <- subset(judgments.reviews, select=c(CaseNumber, StreetAddress, HearingDate, Month, AbatementRecommendation, ReviewRecommendation, XPos, YPos, GeoPIN))
 	needs.review.index <- is.na(judgments.reviews$AbatementRecommendation) & is.na(judgments.reviews$ReviewRecommendation)
 	needs.review <- judgments.reviews[needs.review.index,]
 	has.review <- judgments.reviews[!needs.review.index,]
 	FinalRecommendation <- c()
-	for(i in 1:nrow(has.review)){
-		FinalRecommendation[i] <-
-			if(has.review$AbatementRecommendation[i] == "Occupied" & is.na(has.review$ReviewRecommendation[i])){"Occupied"}
-			else if(is.na(has.review$AbatementRecommendation[i]) | has.review$AbatementRecommendation[i] == "Occupied"){has.review$ReviewRecommendation[i]}
-			else(has.review$AbatementRecommendation[i])
+	for(i in 1:nrow(has.review)) {
+		if(has.review$AbatementRecommendation[i] == "Occupied" & is.na(has.review$ReviewRecommendation[i])) {
+			FinalRecommendation[i] <- "Occupied"
+		} else if(is.na(has.review$AbatementRecommendation[i]) | has.review$AbatementRecommendation[i] == "Occupied") {
+			FinalRecommendation[i] <- has.review$ReviewRecommendation[i]
+		} else {
+			FinalRecommendation[i] <- has.review$AbatementRecommendation[i]
+		}
 	}
 	has.review$FinalRecommendation <- FinalRecommendation
-	has.review$Demolish <- (grepl("Demolish", has.review$FinalRecommendation))*1
-	has.review$Sell <- (grepl("Sell", has.review$FinalRecommendation))*1
-	has.review$Occupied <- (grepl("Occupied", has.review$FinalRecommendation))*1
+	has.review$Demolish <- (grepl("Demolish", has.review$FinalRecommendation)) * 1
+	has.review$Sell <- (grepl("Sell", has.review$FinalRecommendation)) * 1
+	has.review$Occupied <- (grepl("Occupied", has.review$FinalRecommendation)) * 1
 	save(has.review, file="./output/Judgments-With-Reviews.RData")
 
-	#put together all of the categories
+	# put together all of the categories
 	#d.cp <- group_by(closed.paid, Month) %>% summarise(Closed.Paid = n())
 	#d.cu <- group_by(closed.unpaid, Month) %>% summarise(Closed.Unpaid = n())
-	d.nr <- group_by(needs.review, Month) %>% summarise(Needs.Review = n())
-	d.hr <- group_by(has.review, Month) %>% summarise(Demolish = sum(Demolish), Sell = sum(Sell), Occupied = sum(Occupied))
+	d.nr <- group_by(needs.review, Month) %>%
+					summarise(Needs.Review = n())
+	d.hr <- group_by(has.review, Month) %>%
+					summarise(Demolish = sum(Demolish), Sell = sum(Sell), Occupied = sum(Occupied))
 	#return(list(d.cp = d.cp, d.cu = d.cu, d.nr = d.nr, d.hr = d.hr))
-	return(list(d.nr = d.nr, d.hr = d.hr))  ####new
+	return(list(d.nr = d.nr, d.hr = d.hr))
 }
 
 plotReviewProgress <- function(final.date, cache = FALSE){
-	#Plots review status of all cases within the relevant range (each month's bar is a snapshot from the hearings for that month's 6-month range)
-	#To save data, use cache = TRUE
+	# plots review status of all cases within the relevant range (each month's bar is a snapshot from the hearings for that month's 6-month range)
+	# to save data, use cache = TRUE
 
-	#Getting Counts from Current Month
+	# get counts from current month
 	status <- getAbatementReview()
 	d.hr <- data.frame(Month = status$d.hr$Month,
 		Has.Review = rowSums(status$d.hr[,2:ncol(status$d.hr)]))
@@ -97,7 +107,7 @@ plotReviewProgress <- function(final.date, cache = FALSE){
 	d.tot$Counts <- as.numeric(as.character(d.tot$Counts))
 	d.tot$Month <- month
 
-	#Getting/appending Historical Data
+	# get/append historical data
 	#d.tot.hist <- read.csv("./data/Abatement-Review-History.csv")
 	#d.tot.hist$Month <- as.Date(d.tot.hist$Month, "%m/%d/%Y")
 	#d.tot.hist$Month <- as.factor(as.yearmon(d.tot.hist$Month))
@@ -107,11 +117,11 @@ plotReviewProgress <- function(final.date, cache = FALSE){
 
 	d.tot <- status$d.nr
 	d.tot <- d.tot[grepl("2015", d.tot$Month),]
-	d.tot <- d.tot[1:(nrow(d.tot)-2),] #CE generally doesnt begin looking at cases for two months after the judgment
-	#make plot
-#	d.tot$pos <- positionLabels(dat = d.tot$Counts, cats = 4)
-#	d.tot$lab <- d.tot$Counts
-#	d.tot$lab[which(d.tot$lab < 5)] <- ""
+	d.tot <- d.tot[1:(nrow(d.tot)-2),] # CE generally doesnt begin looking at cases for two months after the judgment
+	# make plot
+	#d.tot$pos <- positionLabels(dat = d.tot$Counts, cats = 4)
+	#d.tot$lab <- d.tot$Counts
+	#d.tot$lab[which(d.tot$lab < 5)] <- ""
 
 	#fill <- c(lightBlue, colorRampPalette(c(lightBlue, darkBlue))(3)[2], darkBlue, "firebrick")
 	#p <- barOPA(data = d.tot, x = "Month", y = "Counts", title = "Outcome of Guilty Judgments", fill="Status", position="stack",
@@ -135,10 +145,10 @@ plotReviewProgress <- function(final.date, cache = FALSE){
 plotReviewProgress(final.date=as.Date("2015-05-31"), cache = FALSE)
 
 plotReviewOutcomes <- function(){
-	#Plots review decisions for all cases that have been reviewed in the relevant range
+	# plots review decisions for all cases that have been reviewed in the relevant range
 
 	d.hr <- getAbatementReview()$d.hr
-	#review outcomes (need to fix aesthetics)
+	# review outcomes (need to fix aesthetics)
 	d.hr.agg <- colSums(d.hr[,2:ncol(d.hr)])
 	d.hr.agg <- as.data.frame(d.hr.agg)
 	d.hr.agg$status <- factor(rownames(d.hr.agg), levels = c("Occupied", "Demolish", "Sell"))
@@ -155,11 +165,11 @@ plotReviewOutcomes()
 
 
 plotSaleReview <- function(){
-	#Plots the legal review outcome for properties flagged for sale
-	#For now we have to manually update the Legal-Review.csv spreadsheet, with data sent by Code Enforcement
-	#Data is starting to be tracked in LAMA, so in the future it can be pulled from there
+	# Plots the legal review outcome for properties flagged for sale
+	# For now we have to manually update the Legal-Review.csv spreadsheet, with data sent by Code Enforcement
+	# Data is starting to be tracked in LAMA, so in the future it can be pulled from there
 
-	#Get and process data
+	# Get and process data
 	review <- read.csv("./data/Legal-Review.csv")
 	review$Month <- as.Date(review$Month,  "%m/%d/%Y")
 	review$Month <- as.factor(as.yearmon(review$Month))
@@ -168,7 +178,7 @@ plotSaleReview <- function(){
 	sale.melt <- melt(sale, id = "Month")
 	sale.melt[is.na(sale.melt)] <- 0
 
-	#Make chart
+	# Make chart
 	sale.melt <- sale.melt[order(sale.melt$Month),]
 	sale.melt$pos <- positionLabels(dat = sale.melt$value, cats = 5)
 	sale.melt$lab <- sale.melt$value
@@ -188,11 +198,11 @@ plotSaleReview <- function(){
 plotSaleReview()
 
 plotDemoReview <- function(){
-	#Plots the legal review outcome for properties flagged for demolition
-	#For now we have to manually update the Legal-Review.csv spreadsheet, with data sent by Code Enforcement
-	#Data is starting to be tracked in LAMA, so in the future it can be pulled from there
+	# Plots the legal review outcome for properties flagged for demolition
+	# For now we have to manually update the Legal-Review.csv spreadsheet, with data sent by Code Enforcement
+	# Data is starting to be tracked in LAMA, so in the future it can be pulled from there
 
-	#Get and process data
+	# Get and process data
 	review <- read.csv("./data/Legal-Review.csv")
 	review$Month <- as.Date(review$Month,  "%m/%d/%Y")
 	review <- subset(review, Month >= as.Date("2015-01-01"))
@@ -202,7 +212,7 @@ plotDemoReview <- function(){
 	sale.melt <- melt(sale, id = "Month")
 	sale.melt[is.na(sale.melt)] <- 0
 
-	#Make chart
+	# Make chart
 	sale.melt <- sale.melt[order(sale.melt$Month),]
 	sale.melt$pos <- positionLabels(dat = sale.melt$value, cats = 5)
 	sale.melt$lab <- sale.melt$value
@@ -222,8 +232,8 @@ plotDemoReview <- function(){
 plotDemoReview()
 
 plotSSCollections <- function(){
-	#Plots the collections from sheriff sales
-	#We have to manually update the Legal-Review.csv spreadsheet, with data sent by Code Enforcement
+	# Plots the collections from sheriff sales
+	# We have to manually update the Legal-Review.csv spreadsheet, with data sent by Code Enforcement
 
 	coll <- read.csv("./data/SheriffSaleCollections.csv")
 	coll$Month <- as.Date(coll$Month,"%m/%d/%Y")
@@ -250,9 +260,9 @@ plotSSCollections <- function(){
 plotSSCollections()
 
 getDemos <- function(){
-	#Gets and cleans demos from data.nola.gov
-	#We are responsible for updating and maintaining the spreadsheet that this pulls from
-	#To update the sheet, run Demos-for-Socrata.r (that file has full instructions)
+	# Gets and cleans demos from data.nola.gov
+	# We are responsible for updating and maintaining the spreadsheet that this pulls from
+	# To update the sheet, run Demos-for-Socrata.r (that file has full instructions)
 
 	demo.url <- "http://data.nola.gov/resource/e3wd-h7q2.json?$limit=20000"
 	demo <- fromJSON(paste0(readLines(demo.url)))
@@ -277,7 +287,7 @@ getDemos <- function(){
 }
 
 mapDemosTot <- function(final.date){
-	#Makes a choropleth map with total demolitions by block group
+	# Makes a choropleth map with total demolitions by block group
 
 	demos <- getDemos()
 	demos <- toSpatialPoints(demos, X = "lon", Y = "lat", remove.outliers = TRUE)
@@ -292,7 +302,7 @@ mapDemosTot <- function(final.date){
 mapDemosTot()
 
 mapDemos2015 <- function(final.date){
-	#Maps demolitions by type for 2015 (will have to update script in 2016 if we're still using this map)
+	# Maps demolitions by type for 2015 (will have to update script in 2016 if we're still using this map)
 
 	demos <- getDemos()
 	demos.15 <- subset(demos, demolition_start>=as.Date("2015-01-01"))
@@ -328,7 +338,7 @@ plotCNAP <- function(){
 	cnap$Month <- as.Date(cnap$Month,"%m/%d/%Y")
 	cnap$Month <- as.factor(as.yearmon(cnap$Month))
 
-	#Make plots
+	# Make plots
 	p <- lineOPA(cnap, "Month", "CNAP", "Properties Receiving Routine Maintenance Through CNAP", labels = "CNAP", last_label = TRUE)
 	p <- buildChart(p)
 	ggsave("./output/CNAP-Totals.png", plot = p,  width = 7.42, height = 5.75)
@@ -336,16 +346,16 @@ plotCNAP <- function(){
 plotCNAP()
 
 mapLotClearing <- function(){
-	#Maps lot clearing from NORA, Ch. 66 and CNAP
-	#CNAP still needs to be added (working on getting a reliable feed from data.nola.gov)
+	# Maps lot clearing from NORA, Ch. 66 and CNAP
+	# CNAP still needs to be added (working on getting a reliable feed from data.nola.gov)
 
-	#get nora data
+	# get NORA data
 	nora <- csvFromWeb(file.source="https://data.nola.gov/api/views/5ktx-e9wc/rows.csv?accessType=DOWNLOAD")
 	geopin <- as.numeric(as.character(nora$GEOPIN))
 	program <- rep("NORA Inventory", nrow(nora))
 	nora <- data.frame(geopin, program)
 
-	#get ch 66 data
+	# get ch 66 data
 	#ch66 <- csvFromWeb("https://data.nola.gov/api/views/5duy-3c6h/rows.csv?accessType=DOWNLOAD")
 	ch66 <- read.csv("./data/Ch66-GEOPINS.csv")
 	ch66 <- subset(ch66, STATUS == "COMPLIANT" | STATUS == "REMOVED" | STATUS == "RMC")
@@ -353,7 +363,7 @@ mapLotClearing <- function(){
 	program <- rep("Chapter 66", nrow(ch66))
 	ch66 <- data.frame(geopin, program)
 
-	#get CNAP data (change this to download from web when available)
+	# get CNAP data (change this to download from web when available)
 	CNAP <- readOGR(dsn = paste0(getwd(), "/Data"), layer = "Parcels_CNAP")
 	parcels <- getParcels()
 	# Get GEOPINs and Council Districts
@@ -362,7 +372,7 @@ mapLotClearing <- function(){
 	program <- rep("CNAP", nrow(CNAP))
 	CNAP <- data.frame(geopin, program)
 
-	#put it together and make a map
+	# put it together and make a map
 	maintenance <- rbind(ch66, nora, CNAP)
 	dupe.geopins <- duplicated(maintenance$geopin)
 	maintenance <- maintenance[!dupe.geopins,]
@@ -377,7 +387,7 @@ mapLotClearing <- function(){
 mapLotClearing()
 
 mapSales <- function(){
-	#maps sales since 2010
+	# maps sales since 2010
 
 	sales <- readOGR(paste0(getwd(),"/Data"), "Sales") #need to geocode sales in ArcMap
 	sales$Sold <- gsub("Yes", "Sold", sales$Sold)
