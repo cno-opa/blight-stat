@@ -2,15 +2,10 @@
 
 .libPaths("C:\\RPackages")
 
-# get user to set reporting period. some functions in plotters.R need this variable
-# cat("What is the reporting period?\n\n##(Use mmm yyyy format, please)##\n\n")
-# r_period <- readLines("stdin", 1, warn = FALSE)
-
 # initialize
 init <- function(subdir) {
   Rfiles <- list.files(subdir, pattern = "*.R", full.names = TRUE)
   sapply(Rfiles, source)
-  cat("Running!\n")
 }
 
 #fn to source files stored on Github
@@ -32,6 +27,14 @@ source_https("https://raw.githubusercontent.com/cno-opa/graphics/master/plotters
 source_https("https://raw.githubusercontent.com/cno-opa/graphics/master/mappers.R")
 theme_set(theme_opa())
 init("R/lib")
+
+# get user to set reporting period
+cat("What is the reporting period?\n\n##(Use mmm yyyy format, please)##\n\n")
+r_period <- readLines("stdin", 1, warn = FALSE)
+
+# set `final.date` variable
+final.date <- as.Date(dateFromYearMon(r_period))
+
 init("R")
 
 # finish

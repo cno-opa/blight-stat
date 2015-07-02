@@ -8,11 +8,11 @@
 #==========================
 #
 
-#TODO: replace final.date with r_period type var, collect KPIs
+#TODO: collect KPIs
 
 setInternet2(TRUE)
 
-mapNORASales <- function(final.date){
+mapNORASales <- function(){
 	# get and process data
 	nora.sold <- csvFromWeb("https://data.nola.gov/api/views/hpm5-48nj/rows.csv?accessType=DOWNLOAD")
 
@@ -45,7 +45,7 @@ mapNORASales <- function(final.date){
 	p <- mapOPAPoints(pts = nora.old.sp, X = "X", Y = "Y", style = "Disposition.Channel", fill = cols, size = 2, old.map = new, title = "NORA Sold Properties in 2015")
 	ggsave("./output/NORA-Sales.png", plot = p, width = 7.42, height = 5.75)
 }
-mapNORASales(final.date=as.Date("2015-05-30"))
+mapNORASales()
 
 mapSalesInv <- function(){
 	nora.sold <- csvFromWeb("https://data.nola.gov/api/views/hpm5-48nj/rows.csv?accessType=DOWNLOAD")
@@ -53,7 +53,7 @@ mapSalesInv <- function(){
 	status <- rep("Sold Properties", nrow(nora.sold))
 	nora.sold <- data.frame(geopin, status)
 
-	nora.inv <- csvFromWeb(file.source="https://data.nola.gov/api/views/5ktx-e9wc/rows.csv?accessType=DOWNLOAD")
+	nora.inv <- csvFromWeb(file.source = "https://data.nola.gov/api/views/5ktx-e9wc/rows.csv?accessType=DOWNLOAD")
 	geopin <- as.numeric(as.character(nora.inv$GEOPIN))
 	status <- rep("Remaining Inventory", nrow(nora.inv))
 	nora.inv <- data.frame(geopin, status)
@@ -89,13 +89,13 @@ plotProgram <- function(program){
 	program.df$variable <- gsub("Units.Completed.2015", "Completed", program.df$variable)
 	program.df$variable <- factor(program.df$variable, levels = c("Pre-Development", "Under Development", "Completed"))
 
-	p <- barOPA(data=program.df, x="variable", y="value", title=program, fill = "variable") +
+	p <- barOPA(data = program.df, x = "variable", y = "value", title = program, fill = "variable") +
 	scale_fill_manual(values = c("red", "yellow", "green"))+
 	geom_text(aes_string(label = "value"), size = 3.5, vjust = 1.8, col = "grey30")
 
 	ggsave(paste0("./output/OCD-", program,".png"), plot = p, width = 7.42, height = 5.75)
 }
 
-plotProgram(program="Owner-Occupied Rehabilitation Program")
-plotProgram(program="Homeownership Development Program")
-plotProgram(program="Rental Housing Program")
+plotProgram("Owner-Occupied Rehabilitation Program")
+plotProgram("Homeownership Development Program")
+plotProgram("Rental Housing Program")

@@ -13,11 +13,11 @@
 #==========================
 #
 
-#TODO: replace final.date with r_period type var, collect KPIs
+#TODO: collect KPIs
 
 setInternet2(TRUE)
 
-plotInspectionTotals <- function(final.date){
+plotInspectionTotals <- function(){
 	# plots the total number of inspections
 	# data comes from two sources:
 	#1. The CE All Inspections table on Socrata, which has all inspections that are entered into LAMA
@@ -28,7 +28,7 @@ plotInspectionTotals <- function(final.date){
 
 	# process dates and filter for correct range
 	insp$InspectionDate <- as.Date(insp$InspectionDate, "%m/%d/%Y")
-	insp <- subset(insp,InspectionDate>=as.Date("2013-01-01") & InspectionDate <= final.date)
+	insp <- subset(insp,InspectionDate >= as.Date("2013-01-01") & InspectionDate <= final.date)
 	insp$Month <- as.factor(as.yearmon(insp$InspectionDate))
 
 	# get demolition inspections
@@ -36,12 +36,12 @@ plotInspectionTotals <- function(final.date){
 
 	# summarize by month
 	d <- group_by(insp, Month) %>%
-	summarise(n = n())
+			 summarise(n = n())
 	d$n <- d$n + demo.insp$DemoInspections
 	d$target <- 1250
 
 	# get KPI: Number of 2015 Inspections
-	d.2015 <- d[which(d$Month=="Jan 2015"):nrow(d),]
+	d.2015 <- d[which(d$Month == "Jan 2015"):nrow(d),]
 	cat("KPI -- Total 2015 Inspections:", sum(d.2015$n), "\n")
 
 	# make plots
@@ -50,28 +50,28 @@ plotInspectionTotals <- function(final.date){
 	p <- buildChart(p)
 	ggsave("./output/Inspection-Totals.png", plot = p, width = 7.42, height = 5.75, units = "in")
 }
-plotInspectionTotals(final.date=as.Date("2015-05-31"))
+plotInspectionTotals()
 
 
 inspAgeBins <- function(open,close){
 	diffs <- close-open
 	bins <- c()
 	for (i in 1:length(diffs)) {
-		if(diffs[i]<30) {
+		if(diffs[i] < 30) {
 			bins[i] <- "Less than 30 Days Old"
-		} else if(diffs[i]>=30 & diffs[i]<=90) {
+		} else if(diffs[i] >= 30 & diffs[i] <= 90) {
 			bins[i] <- "30-90 Days Old"
 		} else {
 			bins[i] <- "Greater than 90 Days Old"
 		}
 	}
-	bins <- factor(bins,levels=c("Less than 30 Days Old","30-90 Days Old","Greater than 90 Days Old"))
+	bins <- factor(bins,levels = c("Less than 30 Days Old","30-90 Days Old","Greater than 90 Days Old"))
 	return(bins)
 }
 
 
 # notes: Nned to change colors so that red is on top
-plotInspectionTime <- function(final.date){
+plotInspectionTime <- function(){
 	# Rread in data and process dates (for now we need to use a SQL query because the Socrata dataset doesn't contain a column for the date an inspection was filed)
 	# to get data, run SQL query, change date formats in Excel to "Short Date" and save as Inspections.csv
 	# if/when this is uploaded to socrata we will need to adjust column names
@@ -81,9 +81,9 @@ plotInspectionTime <- function(final.date){
 
 	# filter for inspections completed in the relevant date range, and for new initial inspections
 	start.date <- round_date(seq(final.date, length = 2, by = "-6 months")[2],"month")
-	insp <- subset(insp,Inspection.Completed>=start.date & Inspection.Completed <= final.date)
-	insp <- subset(insp,Type.of.Inspection=="Inspection")
-	insp <- subset(insp,Case.Established>=as.Date("2013-08-30")) #cases before this date will be restarted
+	insp <- subset(insp,Inspection.Completed >= start.date & Inspection.Completed <= final.date)
+	insp <- subset(insp,Type.of.Inspection == "Inspection")
+	insp <- subset(insp,Case.Established >= as.Date("2013-08-30")) #cases before this date will be restarted
 
 	# get KPI: Average number of days to complete inspections
 	insp.2015 <- subset(insp, Inspection.Completed >= as.Date("2015-01-01"))
@@ -97,21 +97,21 @@ plotInspectionTime <- function(final.date){
 	insp$Time.to.Complete <- inspAgeBins(insp$Case.Established,insp$Inspection.Completed)
 	insp$Month <- as.factor(as.yearmon(insp$Inspection.Completed))
 	d <- group_by(insp, Month, Time.to.Complete) %>%
-	summarise(n = n())
+			 summarise(n = n())
 
 	# make plot
 	d$pos <- positionLabels(dat = d$n, cats = 3)
 	fill <- c(lightBlue, darkBlue, "firebrick")
-	p <- barOPA(data = d, x = "Month", y = "n", title = "Age of Completed New Inspections", fill = "Time.to.Complete", position = "stack", labels = "n")
-	p <- p + geom_text(aes_string(label = "n", y = "pos", color = "Time.to.Complete"), size = 3) + scale_colour_manual(values = c("grey30", "grey77", "grey77"), guide = FALSE)
-	p <- p + scale_fill_manual(values = fill)
+	p <- barOPA(data = d, x = "Month", y = "n", title = "Age of Completed New Inspections", fill = "Time.to.Complete", position = "stack", labels = "n") +
+			 geom_text(aes_string(label = "n", y = "pos", color = "Time.to.Complete"), size = 3) + scale_colour_manual(values = c("grey30", "grey77", "grey77"), guide = FALSE) +
+			 scale_fill_manual(values = fill)
 	p <- buildChart(p)
 
 	ggsave("./output/Inspection-Time.png", plot = p,  width = 7.42, height = 5.75)
 }
-plotInspectionTime(final.date=as.Date("2015-05-31"))
+plotInspectionTime()
 
-getInspectionBacklog <- function(final.date) {
+getInspectionBacklog <- function() {
 	# pull down data from Socrata
 	pipeline <- csvFromWeb("https://data.nola.gov/api/views/8pqz-ftzc/rows.csv?accessType=DOWNLOAD")
 
@@ -125,7 +125,7 @@ getInspectionBacklog <- function(final.date) {
 	p.insp <- p.insp[-which(p.insp$GeoPIN %in% dupes),]
 
 	# group by bins of the number of days to complete inspections
-	p.insp$Age.of.Cases <- inspAgeBins(open = p.insp$CaseFiled, close = rep(final.date, times=nrow(p.insp)))
+	p.insp$Age.of.Cases <- inspAgeBins(open = p.insp$CaseFiled, close = rep(final.date, times = nrow(p.insp)))
 	d <- group_by(p.insp, Age.of.Cases) %>%
 			 summarise(n = n())
 	dates <- rep(final.date,nrow(d))
@@ -134,13 +134,13 @@ getInspectionBacklog <- function(final.date) {
 	return(d)
 }
 
-fullInspectionBacklog <- function(final.date){
+fullInspectionBacklog <- function(){
 	old.backlog <- read.csv("./data/HistoricalInspectionBacklog.csv")
-	old.backlog <- subset(old.backlog, select=c(Month, Age.of.Cases, n))
+	old.backlog <- subset(old.backlog, select = c(Month, Age.of.Cases, n))
 	old.backlog$Month <- as.Date(old.backlog$Month, "%m/%d/%Y")
 	old.backlog$Month <- as.factor(as.yearmon(old.backlog$Month))
 
-	new.backlog <- getInspectionBacklog(final.date)
+	new.backlog <- getInspectionBacklog()
 	if(as.character(old.backlog$Month[nrow(old.backlog)]) != as.character(new.backlog$Month[nrow(new.backlog)])) {
 		full.backlog <- rbind(old.backlog, new.backlog)
 	} else {
@@ -150,18 +150,18 @@ fullInspectionBacklog <- function(final.date){
 	return(full.backlog)
 }
 
-plotInspectionBacklog <- function(final.date, cache){
-	full.backlog <- fullInspectionBacklog(final.date)
+plotInspectionBacklog <- function(cache = FALSE){
+	full.backlog <- fullInspectionBacklog()
 	if(cache == TRUE){
 		write.csv(full.backlog,"./data/HistoricalInspectionBacklog.csv")
 	}
 	full.backlog$pos <- positionLabels(dat <- full.backlog$n, cats = 3)
 	fill <- c(lightBlue, darkBlue, "firebrick")
-	p <- barOPA(data=full.backlog, x="Month", y="n", title="Age of Open Cases", fill="Age.of.Cases", position="stack")
-	p <- p + geom_text(aes_string(label = "n", y = "pos", color = "Age.of.Cases"), size = 3) + scale_colour_manual(values = c("grey30", "grey77", "grey77"), guide = FALSE)
-	p <- p + scale_fill_manual(values = fill)
+	p <- barOPA(data=full.backlog, x="Month", y="n", title="Age of Open Cases", fill="Age.of.Cases", position="stack") +
+			 geom_text(aes_string(label = "n", y = "pos", color = "Age.of.Cases"), size = 3) + scale_colour_manual(values = c("grey30", "grey77", "grey77"), guide = FALSE) +
+			 scale_fill_manual(values = fill)
 	p <- buildChart(p)
 
 	ggsave("./output/Inspection-Backlog.png", plot = p, width = 7.42, height = 5.75)
 }
-plotInspectionBacklog(final.date=as.Date("2015-05-31"), cache=FALSE) #set to true to save a version of the backlog with new monthly data
+plotInspectionBacklog(cache = FALSE) #set to true to save a version of the backlog with new monthly data
