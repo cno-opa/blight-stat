@@ -16,7 +16,7 @@
 # ==========================
 #
 
-#TODO: replace final.date with user-inputted r_period type variable. print out KPIs at end rather than while script runs
+#TODO: print out KPIs at end rather than while script runs
 
 setInternet2(TRUE)
 
@@ -31,16 +31,16 @@ getAbatementReview <- function(){
 	judgments <- read.csv("./data/JudgmentsForAbatementReview.csv")
 
 	#judgments <- csvFromWeb("https://data.nola.gov/api/views/44ct-56tr/rows.csv?accessType=DOWNLOAD") ###new
-	judgments <- subset(judgments, Judgment=="Guilty")
+	judgments <- subset(judgments, Judgment == "Guilty")
 	judgments$HearingDate <- as.Date(judgments$HearingDate,"%m/%d/%Y")
 	judgments$Month <- as.factor(as.yearmon(judgments$HearingDate))
 
 	abatement.tool <- read.csv("./data/AbatementTool.csv")
 	admin.reviews <- read.csv("./data/AdminReviews.csv")
-	names(abatement.tool)[which(names(abatement.tool)=="CaseID")] <- "CaseNumber" #change SQL script and these won't be necessary
-	names(abatement.tool)[which(names(abatement.tool)=="Recommendation")] <- "AbatementRecommendation"
-	names(admin.reviews)[which(names(admin.reviews)=="NumString")] <- "CaseNumber"
-	names(admin.reviews)[which(names(admin.reviews)=="Status")] <- "ReviewRecommendation"
+	names(abatement.tool)[which(names(abatement.tool) == "CaseID")] <- "CaseNumber" #change SQL script and these won't be necessary
+	names(abatement.tool)[which(names(abatement.tool) == "Recommendation")] <- "AbatementRecommendation"
+	names(admin.reviews)[which(names(admin.reviews) == "NumString")] <- "CaseNumber"
+	names(admin.reviews)[which(names(admin.reviews) == "Status")] <- "ReviewRecommendation"
 	abatement.tool <- subset(abatement.tool, AbatementRecommendation %in% c("Clear Lot", "Complete", "Demolish", "Sell"))
 	admin.reviews <- subset(admin.reviews, ReviewRecommendation %in% c("Clear Lot", "Demolish", "Sell", "Hold", "On Hold"))
 	abatement.tool$AbatementRecommendation <- as.character(abatement.tool$AbatementRecommendation)
@@ -51,12 +51,12 @@ getAbatementReview <- function(){
 	# categorize closed cases
 	#closed.paid <- subset(judgments, O.C=="Closed" & UnpaidFees == 0)
 	#closed.unpaid <- subset(judgments, O.C=="Closed" & UnpaidFees > 0)
-	closed <- subset(judgments, O.C=="Closed")
+	closed <- subset(judgments, O.C == "Closed")
 
 	# categorize open cases
-	open <- subset(judgments, O.C=="Open")
-	judgments.reviews.1 <- merge(x=open, y=abatement.tool, all.x=TRUE, by="CaseNumber")
-	judgments.reviews <- merge(x=judgments.reviews.1, y=admin.reviews, all.x=TRUE, by="CaseNumber")
+	open <- subset(judgments, O.C == "Open")
+	judgments.reviews.1 <- merge(x = open, y = abatement.tool, all.x = TRUE, by = "CaseNumber")
+	judgments.reviews <- merge(x = judgments.reviews.1, y = admin.reviews, all.x = TRUE, by = "CaseNumber")
 	#judgments.reviews <- subset(judgments.reviews, select=c(CaseNumber, StreetAddress, HearingDate, Month, AbatementRecommendation, ReviewRecommendation, XPos, YPos, GeoPIN))
 	needs.review.index <- is.na(judgments.reviews$AbatementRecommendation) & is.na(judgments.reviews$ReviewRecommendation)
 	needs.review <- judgments.reviews[needs.review.index,]
@@ -75,7 +75,7 @@ getAbatementReview <- function(){
 	has.review$Demolish <- (grepl("Demolish", has.review$FinalRecommendation)) * 1
 	has.review$Sell <- (grepl("Sell", has.review$FinalRecommendation)) * 1
 	has.review$Occupied <- (grepl("Occupied", has.review$FinalRecommendation)) * 1
-	save(has.review, file="./output/Judgments-With-Reviews.RData")
+	save(has.review, file = "./output/Judgments-With-Reviews.RData")
 
 	# put together all of the categories
 	#d.cp <- group_by(closed.paid, Month) %>% summarise(Closed.Paid = n())
@@ -88,7 +88,7 @@ getAbatementReview <- function(){
 	return(list(d.nr = d.nr, d.hr = d.hr))
 }
 
-plotReviewProgress <- function(final.date, cache = FALSE){
+plotReviewProgress <- function(cache = FALSE){
 	# plots review status of all cases within the relevant range (each month's bar is a snapshot from the hearings for that month's 6-month range)
 	# to save data, use cache = TRUE
 
@@ -135,15 +135,15 @@ plotReviewProgress <- function(final.date, cache = FALSE){
 
 	d.tot$group <- rep("l", nrow(d.tot))
 	fill <- rep("firebrick", nrow(d.tot))
-	p <- barOPA(data = d.tot, x = "Month", y = "Needs.Review", title = "Number of Guilty Judgments Awaiting Abatement Reviews", fill = "group")
-	p <- p + scale_fill_manual(values = fill, guide = FALSE) +
+	p <- barOPA(data = d.tot, x = "Month", y = "Needs.Review", title = "Number of Guilty Judgments Awaiting Abatement Reviews", fill = "group") +
+		   scale_fill_manual(values = fill, guide = FALSE) +
 			 geom_text(aes_string(label = "Needs.Review"), size = 4.5, vjust = 1.8, col = "grey77")
 	p <- buildChart(p)
 	p
 
 	ggsave("./output/Abatement-Review-Progress.png", plot = p, width = 7.42, height = 5.75)
 }
-plotReviewProgress(final.date=as.Date("2015-05-31"), cache = FALSE)
+plotReviewProgress(cache = FALSE)
 
 plotReviewOutcomes <- function(){
 	# plots review decisions for all cases that have been reviewed in the relevant range
@@ -158,7 +158,7 @@ plotReviewOutcomes <- function(){
 	geom_bar(stat = "identity", fill = darkBlue)+
 	coord_flip() +
 	geom_text(aes_string(label = "count"), size = 3.5, hjust = 1.2, col = "grey77") +
-	labs(title="Outcome of Reviews", x=NULL, y=NULL)
+	labs(title = "Outcome of Reviews", x = NULL, y = NULL)
 	p
 	ggsave("./output/Abatement-Review-Outcomes.png", plot = p, width = 7.42, height = 5.75)
 }
@@ -172,7 +172,7 @@ plotSaleReview <- function(){
 
 	# get and process data
 	review <- read.csv("./data/Legal-Review.csv")
-	review$Month <- as.Date(review$Month,  "%m/%d/%Y")
+	review$Month <- as.Date(review$Month, "%m/%d/%Y")
 	review$Month <- as.factor(as.yearmon(review$Month))
 	cols <- grepl("Sales", names(review)) | grepl("Month", names(review))
 	sale <- review[, cols]
@@ -188,7 +188,7 @@ plotSaleReview <- function(){
 	tomatos <- colorRampPalette(c("tomato", "tomato4"))
 	grays <- colorRampPalette(c("grey79", "grey48"))
 	fill <- c(darkBlue, grays(2), tomatos(2))
-	p <- barOPA(data = sale.melt, x = "Month", y = "value", title = "Legal Review Outcomes-Sheriff Sales", fill="variable", position="stack")
+	p <- barOPA(data = sale.melt, x = "Month", y = "value", title = "Legal Review Outcomes-Sheriff Sales", fill = "variable", position = "stack")
 	p <- p + scale_fill_manual(values = fill, labels = c("Accepted","External Factors", "Miscellaneous","Procedural Deficiency", "Title Research"))
 	p <- p + geom_text(aes_string(label = "lab", y = "pos", color = "variable"), size = 3) +
 	scale_colour_manual(values = c("grey77", "grey30", "grey30", "grey30", "grey77"), guide = FALSE)
@@ -222,7 +222,7 @@ plotDemoReview <- function(){
 	grays <- colorRampPalette(c("grey79", "grey48"))
 	tomatos <- colorRampPalette(c("tomato", "tomato3"))
 	fill <- c(darkBlue, grays(2), tomatos(2))
-	p <- barOPA(data = sale.melt, x = "Month", y = "value", title = "Legal Review Outcomes-Demolitions", fill="variable", position="stack")
+	p <- barOPA(data = sale.melt, x = "Month", y = "value", title = "Legal Review Outcomes-Demolitions", fill = "variable", position = "stack")
 	p <- p + scale_fill_manual(values = fill, labels = c("Accepted","External Factors", "Miscellaneous","Procedural Deficiency", "Title Research"))
 	p <- p + geom_text(aes_string(label = "lab", y = "pos", color = "variable"), size = 3) +
 	scale_colour_manual(values = c("grey77", "grey30", "grey30", "grey30", "grey77"), guide = FALSE)
@@ -250,12 +250,11 @@ plotSSCollections <- function(){
 	m$lab <- paste0("$", round(m$lab, 1), "K")
 	m$lab[which(m$lab == "$0")] <- ""
 
-	p <- barOPA(data=m, x="Month", y="value", currency=TRUE, title="Amount of Collections from Sheriff Sales",
-	fill="variable", position="stack", legend.labels=c("Taxes from Sales", "Liens from Sale", "Liens without Sale"))
-	p <- p + geom_text(aes_string(label = "lab", y = "pos", color = "variable"), size = 2) +
-	scale_colour_manual(values = c("grey77", "grey30", "grey30"), guide = FALSE)
+	p <- barOPA(data = m, x = "Month", y = "value", currency = TRUE, title = "Amount of Collections from Sheriff Sales", fill = "variable", position = "stack", legend.labels= c ("Taxes from Sales", "Liens from Sale", "Liens without Sale")) +
+ 			 geom_text(aes_string(label = "lab", y = "pos", color = "variable"), size = 2) +
+			 scale_colour_manual(values = c("grey77", "grey30", "grey30"), guide = FALSE)
 	p <- buildChart(p)
-	p
+
 	ggsave("./output/Sale-Collections.png", plot = p, width = 7.42, height = 5.75)
 }
 plotSSCollections()
@@ -287,7 +286,7 @@ getDemos <- function(){
 	return(demo)
 }
 
-mapDemosTot <- function(final.date){
+mapDemosTot <- function(){
 	# makes a choropleth map with total demolitions by block group
 
 	demos <- getDemos()
@@ -302,7 +301,7 @@ mapDemosTot <- function(final.date){
 }
 mapDemosTot()
 
-mapDemos2015 <- function(final.date){
+mapDemos2015 <- function(){
 	# maps demolitions by type for 2015 (will have to update script in 2016 if we're still using this map)
 
 	demos <- getDemos()
@@ -326,13 +325,13 @@ mapDemos2015 <- function(final.date){
 	demo.old <- toSpatialPoints(demo.old, X = "lon", Y = "lat", remove.outliers = TRUE)
 	demo.new <- toSpatialPoints(demo.new, X = "lon", Y = "lat", remove.outliers = TRUE)
 	fill <- c("darkorchid", "darkorange2", "dodgerblue", "chartreuse3")
-	new <- mapOPAPoints(pts=demo.new, X="lon", Y="lat",style="program.pretty",fill=fill, size=4)
+	new <- mapOPAPoints(pts = demo.new, X = "lon", Y = "lat",style = "program.pretty",fill = fill, size = 4)
 	p <- mapOPAPoints(pts = demo.old, X = "lon", Y = "lat", style = "program.pretty", fill = fill, old.map = new, size = 2, title="Properties Demolished in 2015") +
 			 guides(fill=guide_legend(nrow=2,byrow=TRUE))
 
 	ggsave("./output/Demos-2015.png", plot = p,  width = 7.42, height = 5.75)
 }
-mapDemos2015(final.date = as.Date("2015-05-31"))
+mapDemos2015()
 
 plotCNAP <- function(){
 	cnap <- read.csv("./data/CNAP-Totals.csv")
