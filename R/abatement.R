@@ -90,7 +90,7 @@ getAbatementReview <- function(){
 
 plotReviewProgress <- function(cache = FALSE){
 	# plots review status of all cases within the relevant range (each month's bar is a snapshot from the hearings for that month's 6-month range)
-	# to save data, use cache = FALSE
+	# to save data, use cache = TRUE
 
 	# get counts from current month
 	status <- getAbatementReview()
@@ -144,6 +144,29 @@ plotReviewProgress <- function(cache = FALSE){
 	ggsave("./output/Abatement-Review-Progress.png", plot = p, width = 7.42, height = 5.75)
 }
 plotReviewProgress(cache = FALSE)
+
+plotReviewBacklog <- function() {
+	d <- read.csv("./data/judgments-awaiting-review-backlog.csv")
+	d$month <- as.factor(as.yearmon(d$month))
+
+	# redundancy
+	write.csv(d, paste0("./data/judgments-awaiting-review-backlog-", format(Sys.time(), "%Y-%m-%d"), ".csv"))
+
+	# check if r_period data is in d
+	if(dateFromYearMon(r_period) > dateFromYearMon(d$month[nrow(d)])) {
+		s <- getAbatementReview()$d.nr
+		m <- s$Month[nrow(s)]
+		b <- sum(s$Needs.Review[which(s$Month == "Jan 2015"):(nrow(s) - 2)])
+		x <- data.frame(month = m, backlog = b)
+		d <- rbind(d, x)
+	}
+
+	p <- lineOPA(d, "month", "backlog", "Historical view of guilty judgment backlog", labels = "backlog")
+	p <- buildChart(p)
+	ggsave("./output/Abatement-Review-Backlog-Hist.png", plot = p, width = 7.42, height = 5.75)
+	write.csv(d, "./data/judgments-awaiting-backlog.csv", row.names = FALSE)
+}
+plotReviewBacklog()
 
 plotReviewOutcomes <- function(){
 	# plots review decisions for all cases that have been reviewed in the relevant range
@@ -269,11 +292,6 @@ getDemos <- function(){
 	demo$lon <- as.numeric(demo$location_1$longitude)
 	demo$lat <- as.numeric(demo$location_1$latitude)
 	demo$location_1 <- NULL
-
-	# demo <- read.csv("./data/demos-temp.csv")
-	# names(demo) <- slugify(names(demo))
-	# demo$lat <- as.numeric(demo$location_1)
-	# demo$lon <- as.numeric(demo$location_2)
 
 	program.pretty <- c()
 	for(i in 1:nrow(demo)){
