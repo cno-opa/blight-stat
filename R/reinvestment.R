@@ -23,10 +23,10 @@ mapNORASales <- function(){
 	#nora.sold.url = "https://data.nola.gov/resource/hpm5-48nj.json"
 	#nora.sold <- fromJSON(paste0(readLines(nora.sold.url)))
 
-	#nora.sold$Sale.Date=as.Date(nora.sold$Sale.Date, "%m/%d/%Y") ## use this line if pulling from csv
-	nora.sold$Sale.Date <- as.Date(nora.sold$Sale.Date, "%m/%d/%y") ##use this line if pulling directly from the web...bizarrely there are some differences between the two formats
-	nora.sold <- subset(nora.sold, Sale.Date > as.Date("2010-01-01"))
-	nora.2015 <- subset(nora.sold, Sale.Date >= as.Date("2015-01-01"))
+	#nora.sold$Sale.Date=as.Date(nora.sold$Sale.Date, "%m/%d/%Y")
+	nora.sold$Sale.Date <- as.Date(nora.sold$Sale.Date, "%m/%d/%y")
+	nora.sold <- filter(nora.sold, Sale.Date >= as.Date("2010-01-01"))
+	nora.2015 <- filter(nora.sold, Sale.Date >= as.Date("2015-01-01"))
 	cat("Number of sold properties in 2015:", nrow(nora.2015), "\n")
 
 	# divide last month of sales
@@ -90,8 +90,10 @@ plotProgram <- function(program){
 	program.df$variable <- factor(program.df$variable, levels = c("Pre-Development", "Under Development", "Completed"))
 
 	p <- barOPA(data = program.df, x = "variable", y = "value", title = program, fill = "variable") +
-	scale_fill_manual(values = c("red", "yellow", "green"))+
-	geom_text(aes_string(label = "value"), size = 3.5, vjust = 1.8, col = "grey30")
+			 scale_fill_manual(values = c("red", "yellow", "green"))+
+			 geom_text(aes_string(label = "value"), size = 3.5, vjust = 1.8, col = "grey30")
+
+	p <- buildChart(p)
 
 	ggsave(paste0("./output/OCD-", program,".png"), plot = p, width = 7.42, height = 5.75)
 }

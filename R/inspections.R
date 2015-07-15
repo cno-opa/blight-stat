@@ -137,7 +137,7 @@ getInspectionBacklog <- function() {
 fullInspectionBacklog <- function(){
 	old.backlog <- read.csv("./data/HistoricalInspectionBacklog.csv")
 	old.backlog <- subset(old.backlog, select = c(Month, Age.of.Cases, n))
-	old.backlog$Month <- as.Date(old.backlog$Month, "%m/%d/%Y")
+	#old.backlog$Month <- as.Date(old.backlog$Month, "%m/%d/%Y")
 	old.backlog$Month <- as.factor(as.yearmon(old.backlog$Month))
 
 	new.backlog <- getInspectionBacklog()

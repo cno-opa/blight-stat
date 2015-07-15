@@ -33,7 +33,7 @@ setInternet2(TRUE)
 
 # load data
 #demo.name <- "Demos-May-SDER" #shapefile name with no extensions
-demos <- readOGR("./data", "DemosApril")
+demos <- readOGR("./data", "Demos")
 council <- getCouncil()
 parcels <- getParcels()
 

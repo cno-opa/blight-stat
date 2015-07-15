@@ -76,14 +76,16 @@ plotResearchTime <- function(){
 	rsrch$Month <- as.factor(as.yearmon(rsrch$Research.Completed))
 	d <- group_by(rsrch, Month, Year.Opened) %>%
 			 summarise(n = n())
+	d <- group_by(d, Month) %>%
+			 mutate(pos = cumsum(n) - (0.5 * n))
 
-	pos.1 <- positionLabels(dat = d$n[1:2], cats = 2)
-	pos.2 <- positionLabels(dat = d$n[3:length(d$n)], cats = 3)
-	d$pos <- c(pos.1, pos.2)
+	# pos.1 <- positionLabels(dat = d$n[1:2], cats = 2)
+	# pos.2 <- positionLabels(dat = d$n[3:length(d$n)], cats = 3)
+	# d$pos <- c(pos.1, pos.2)
 
 	p <- barOPA(data = d, x = "Month", y = "n", title = "Filing Year of Cases Researched", fill = "Year.Opened", position = "stack") +
-			 geom_text(aes_string(label = "n", y = "pos", color = "Year.Opened"), size = 3) +
-			 scale_colour_manual(values = c("grey77", "grey77", "grey30"), guide = FALSE)
+			geom_text(aes_string(label = "n", y = "pos", color = "Year.Opened"), size = 3) +
+			scale_colour_manual(values = c("grey77", "grey77", "grey30"), guide = FALSE)
 	p <- buildChart(p)
 
 	ggsave("./output/Research-Time.png", plot = p, width = 7.42, height = 5.75)
@@ -119,7 +121,7 @@ getResearchBacklog <- function(){
 
 fullResearchBacklog <- function(){
 	old.backlog <- read.csv("./data/HistoricalResearchBacklog.csv")
-	old.backlog$Month <- as.Date(old.backlog$Month, "%m/%d/%Y")
+	#old.backlog$Month <- as.Date(old.backlog$Month, "%m/%d/%Y")
 	old.backlog$Month <- as.factor(as.yearmon(old.backlog$Month))
 	new.backlog <- getResearchBacklog()
 

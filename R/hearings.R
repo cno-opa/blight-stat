@@ -141,7 +141,7 @@ plotHearingResets <- function() {
 	reinsp.tot <- nrow(subset(hrng.2015, Reset.Reinspection == 1))/nrow(hrng.2015)
 	notice.tot <- nrow(subset(hrng.2015, Reset.Notice == 1))/nrow(hrng.2015)
 	cat("KPI -- Percent of cases reset due to no reinspection: ", reinsp.tot, "\n")
-	cat("KPI -- Percent of cases reset due to no reinspection: ", notice.tot, "\n")
+	cat("KPI -- Percent of cases reset due to no notice: ", notice.tot, "\n")
 
 
 	d <- group_by(hrng, Month) %>%
@@ -156,9 +156,9 @@ plotHearingResets <- function() {
 	fill <- c("tomato", "tomato3", lightBlue)
 	#make plots
 	p <- barOPA(data = dm, x = "Month", y = "value", title = "Percent of Cases Reset", fill = "variable", percent = TRUE, position = "stack", legend.labels = c("No Resinspection","Insufficient Notice","Others (External Factors)")) +
-			 scale_fill_manual(values = fill, labels = c("No Resinspection","Insufficient Notice","Others (External Factors)")) +
-			 geom_text(aes_string(label = "lab", y = "pos", color = "variable"), size = 2.5) +
-			 scale_colour_manual(values = c("grey30", "grey30", "grey30"), guide = FALSE)
+			 scale_fill_manual(values = fill, labels = c("No Resinspection","Insufficient Notice","Others (External Factors)"))
+			#  geom_text(aes_string(label = "lab", y = "pos", color = "variable"), size = 2.5) +
+			#  scale_colour_manual(values = c("grey30", "grey30", "grey30"), guide = FALSE)
 	p <- buildChart(p)
 
 	ggsave("./output/Hearing-Resets.png", plot = p, width = 7.42, height = 5.75)

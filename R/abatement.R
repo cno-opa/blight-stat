@@ -90,7 +90,7 @@ getAbatementReview <- function(){
 
 plotReviewProgress <- function(cache = FALSE){
 	# plots review status of all cases within the relevant range (each month's bar is a snapshot from the hearings for that month's 6-month range)
-	# to save data, use cache = TRUE
+	# to save data, use cache = FALSE
 
 	# get counts from current month
 	status <- getAbatementReview()
@@ -270,6 +270,11 @@ getDemos <- function(){
 	demo$lat <- as.numeric(demo$location_1$latitude)
 	demo$location_1 <- NULL
 
+	# demo <- read.csv("./data/demos-temp.csv")
+	# names(demo) <- slugify(names(demo))
+	# demo$lat <- as.numeric(demo$location_1)
+	# demo$lon <- as.numeric(demo$location_2)
+
 	program.pretty <- c()
 	for(i in 1:nrow(demo)){
 		if(demo$program[i]=="FEMA"){program.pretty[i] <- "FEMA"
@@ -305,7 +310,7 @@ mapDemos2015 <- function(){
 	# maps demolitions by type for 2015 (will have to update script in 2016 if we're still using this map)
 
 	demos <- getDemos()
-	demos.15 <- subset(demos, demolition_start>=as.Date("2015-01-01"))
+	demos.15 <- subset(demos, demolition_start >= as.Date("2015-01-01"))
 
 	test <- unlist(demos.15["program.pretty"])
 
@@ -323,11 +328,11 @@ mapDemos2015 <- function(){
 	demo.old <- subset(demos.15,demolition_start < new.month | is.na(demolition_start))
 	demo.new <- subset(demos.15, demolition_start >= new.month)
 	demo.old <- toSpatialPoints(demo.old, X = "lon", Y = "lat", remove.outliers = TRUE)
-	demo.new <- toSpatialPoints(demo.new, X = "lon", Y = "lat", remove.outliers = TRUE)
+	demo.new <- toSpatialPoints(demo.new, X = "lon", Y = "lat", remove.outliers = FALSE)
 	fill <- c("darkorchid", "darkorange2", "dodgerblue", "chartreuse3")
 	new <- mapOPAPoints(pts = demo.new, X = "lon", Y = "lat",style = "program.pretty",fill = fill, size = 4)
-	p <- mapOPAPoints(pts = demo.old, X = "lon", Y = "lat", style = "program.pretty", fill = fill, old.map = new, size = 2, title="Properties Demolished in 2015") +
-			 guides(fill=guide_legend(nrow=2,byrow=TRUE))
+	p <- mapOPAPoints(pts = demo.old, X = "lon", Y = "lat", style = "program.pretty", fill = fill, old.map = new, size = 2, title = "Properties Demolished in 2015") +
+			 guides(fill = guide_legend(nrow = 2,byrow = TRUE))
 
 	ggsave("./output/Demos-2015.png", plot = p,  width = 7.42, height = 5.75)
 }
@@ -364,7 +369,7 @@ mapLotClearing <- function(){
 	ch66 <- data.frame(geopin, program)
 
 	# get CNAP data (change this to download from web when available)
-	CNAP <- readOGR(dsn = paste0(getwd(), "/Data"), layer = "Parcels_CNAP")
+	CNAP <- readOGR(dsn = "./data", layer = "CNAP")
 	parcels <- getParcels()
 	# get GEOPINs and Council Districts
 	CNAP.geopin <- over(geometry(CNAP), parcels)
@@ -389,7 +394,7 @@ mapLotClearing()
 mapSales <- function(){
 	# maps sales since 2010
 
-	sales <- readOGR(paste0(getwd(),"/Data"), "Sales") #need to geocode sales in ArcMap
+	sales <- readOGR("./data", "Sales") #need to geocode sales in ArcMap
 	sales$Sold <- gsub("Yes", "Sold", sales$Sold)
 	sales$Sold <- gsub("No", "Not Sold", sales$Sold)
 	sales$Sold <- factor(sales$Sold, levels=c("Sold", "Not Sold")) #adjust order if plotting incorrectly
