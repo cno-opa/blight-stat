@@ -342,6 +342,14 @@ mapDemos2015 <- function(){
 
 	cat("KPI -- Total Units Demolished in 2015: ", sum(as.numeric(as.character(demos.15$units)), na.rm = TRUE), "\n")
 	cat("KPI -- Total Properties Demolished in 2015: ", nrow(demos.15), "\n")
+
+	set_kpi <- function() {
+		load("./data/kpi.Rdata")
+		kpi <- rbind(kpi, c("Number of units demolished YTD", sum(as.numeric(as.character(demos.15$units)), na.rm = TRUE)) )
+		save(kpi, file = "./data/kpi.Rdata")
+	}
+	set_kpi()
+
 	new.month <- seq(final.date, length = 2, by = "-1 month")[2]
 	demo.old <- subset(demos.15,demolition_start < new.month | is.na(demolition_start))
 	demo.new <- subset(demos.15, demolition_start >= new.month)

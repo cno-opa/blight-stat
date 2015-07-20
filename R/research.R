@@ -35,6 +35,13 @@ plotResearchTotals <- function(){
 	d.2015 <- d[which(d$Month=="Jan 2015"):nrow(d),]
 	cat("KPI -- Total 2015 Research:", sum(d.2015$n), "\n")
 
+	set_kpi <- function() {
+		load("./data/kpi.Rdata")
+		kpi <- rbind(kpi, c("Number of cases researched YTD", sum(d.2015$n)) )
+		save(kpi, file = "./data/kpi.Rdata")
+	}
+	set_kpi()
+
 
 	# make plots
 	theme_set(theme_opa())

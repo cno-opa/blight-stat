@@ -29,6 +29,13 @@ mapNORASales <- function(){
 	nora.2015 <- filter(nora.sold, Sale.Date >= as.Date("2015-01-01"))
 	cat("Number of sold properties in 2015:", nrow(nora.2015), "\n")
 
+	set_kpi <- function() {
+		load("./data/kpi.Rdata")
+		kpi <- rbind(kpi, c("Number of properties returned to commerce through disposition programs YTD", nrow(nora.2015)) )
+		save(kpi, file = "./data/kpi.Rdata")
+	}
+	set_kpi()
+
 	# divide last month of sales
 	program.counts <- legendCounts(nora.2015$Disposition.Channel)
 	nora.2015$Disposition.Channel <- program.counts

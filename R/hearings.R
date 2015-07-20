@@ -32,7 +32,14 @@ plotHearingTotals <- function(){
 
 	hrng.2015 <- subset(hrng.old, HearingDate >= as.Date("2015-01-01"))
 	hrng.init <-  subset(hrng.2015, CaseHistory == "Initial Hearing")
-	cat("KPI -- Number of Initial Hearings in 2015:", nrow(hrng.init), "\n")
+	cat("KPI -- Number of properties brought to hearing YTD", nrow(hrng.init), "\n")
+
+	set_kpi <- function() {
+		load("./data/kpi.Rdata")
+		kpi <- rbind(kpi, c("Number of properties brought to hearing YTD", nrow(hrng.init)) )
+		save(kpi, file = "./data/kpi.Rdata")
+	}
+	set_kpi()
 
 	hrng.proj <- subset(hrng, HearingDate >= final.date & HearingDate <= proj.date)
 	hrng <- rbind(hrng.old, hrng.proj)
@@ -143,6 +150,12 @@ plotHearingResets <- function() {
 	cat("KPI -- Percent of cases reset due to no reinspection: ", reinsp.tot, "\n")
 	cat("KPI -- Percent of cases reset due to no notice: ", notice.tot, "\n")
 
+	set_kpi <- function() {
+		load("./data/kpi.Rdata")
+		kpi <- rbind(kpi, c("Percent of hearings reset due to failure to reinspect the property YTD", reinsp.tot ))
+		kpi <- rbind(kpi, c("Percent of hearings reset due to failure to properly notify the owner YTD", notice.tot ))
+		save(kpi, file = "./data/kpi.Rdata")
+	}
 
 	d <- group_by(hrng, Month) %>%
 	summarise(mean(Reset.Reinspection), mean(Reset.Notice), mean(Reset.Other))
@@ -176,7 +189,14 @@ plotAbatement <- function(){ #Lien Waivers csv must be updated(even if 0)
 	names(d) <- c("Month", "value", "variable")
 
 	abate.2015 <- d[grepl("2015", d$Month),]
-	cat("KPI -- Number of properties abated by owners: ", sum(abate.2015$value), "\n")
+	cat("KPI -- Number of blighted properties brought into compliance by owners: ", sum(abate.2015$value), "\n")
+
+	set_kpi <- function() {
+		load("./data/kpi.Rdata")
+		kpi <- rbind(kpi, c("Number of blighted properties brought into compliance by owners", sum(abate.2015$value)) )
+		save(kpi, file = "./data/kpi.Rdata")
+	}
+	set_kpi()
 
 	# make plots
 	d <- d[order(d$Month),]
