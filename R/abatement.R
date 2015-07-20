@@ -16,7 +16,7 @@
 # ==========================
 #
 
-#TODO: print out KPIs at end rather than while script runs
+#TODO: PROFIT
 
 setInternet2(TRUE)
 

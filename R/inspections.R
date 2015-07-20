@@ -13,7 +13,7 @@
 #==========================
 #
 
-#TODO: collect KPIs
+#TODO: PROFIT
 
 setInternet2(TRUE)
 
@@ -146,15 +146,17 @@ fullInspectionBacklog <- function(){
 	} else {
 		full.backlog <- old.backlog
 	}
-	full.backlog$Age.of.Cases <- factor(full.backlog$Age.of.Cases, levels=c("Less than 30 Days Old","30-90 Days Old","Greater than 90 Days Old"))
+	full.backlog$Age.of.Cases <- factor(full.backlog$Age.of.Cases, levels=c("Less than 30 Days Old", "30-90 Days Old", "Greater than 90 Days Old"))
 	return(full.backlog)
 }
 
-plotInspectionBacklog <- function(cache = FALSE){
+plotInspectionBacklog <- function(){
 	full.backlog <- fullInspectionBacklog()
-	if(cache == TRUE){
+
+	if( dateFromYearMon(r_period) > dateFromYearMon(full.backlog$Month[nrow(full.backlog)]) ){
 		write.csv(full.backlog,"./data/HistoricalInspectionBacklog.csv")
 	}
+
 	full.backlog$pos <- positionLabels(dat <- full.backlog$n, cats = 3)
 	fill <- c(lightBlue, darkBlue, "firebrick")
 	p <- barOPA(data=full.backlog, x="Month", y="n", title="Age of Open Cases", fill="Age.of.Cases", position="stack") +
@@ -164,4 +166,4 @@ plotInspectionBacklog <- function(cache = FALSE){
 
 	ggsave("./output/Inspection-Backlog.png", plot = p, width = 7.42, height = 5.75)
 }
-plotInspectionBacklog(cache = FALSE) #set to true to save a version of the backlog with new monthly data
+plotInspectionBacklog()

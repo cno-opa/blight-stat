@@ -12,7 +12,7 @@
 #
 #
 
-#TODO: collect KPIs
+#TODO: PROFIT
 
 setInternet2(TRUE)
 
@@ -44,7 +44,6 @@ plotResearchTotals <- function(){
 
 
 	# make plots
-	theme_set(theme_opa())
 	p <- lineOPA(d, "Month", "n", "Number of Cases Researched", labels = "format(n, big.mark = \",\", scientific = FALSE)")
 	p <- p + geom_hline(yintercept = 4000/12, linetype = "dashed")
 	p <- buildChart(p)
@@ -140,13 +139,13 @@ fullResearchBacklog <- function(){
 	return(full.backlog)
 }
 
-plotResearchBacklog <- function(cache = FALSE){
+plotResearchBacklog <- function(){
 	full.backlog <- fullResearchBacklog()
 	pos.1 <- positionLabels(dat = full.backlog$n[1:2], cats = 2)
 	pos.2 <- positionLabels(dat = full.backlog$n[3:length(full.backlog$n)], cats = 3)
 	full.backlog$pos <- positionLabels(dat = full.backlog$n, cats = 3)
 
-	if(cache == TRUE) {
+	if(dateFromYearMon(r_period) > dateFromYearMon(full.backlog$Month[nrow(full.backlog)])) {
 		write.csv(full.backlog,"./data/HistoricalResearchBacklog.csv")
 	}
 	p <- barOPA(data = full.backlog, x = "Month", y = "n", title = "Filing Year of Open Cases", fill = "Year.Opened", position = "stack") +
@@ -156,4 +155,4 @@ plotResearchBacklog <- function(cache = FALSE){
 
 	ggsave("./output/Research-Backlog.png", plot = p, width = 7.42, height = 5.75)
 }
-plotResearchBacklog(cache = FALSE) #set to true to save a version of the backlog with new monthly data
+plotResearchBacklog()

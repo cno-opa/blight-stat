@@ -1,5 +1,7 @@
 # runs the whole kit and kaboodle
 
+# TODO: remove cache = TRUE functionality
+
 .libPaths("C:\\RPackages")
 
 # initialize
