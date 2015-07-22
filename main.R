@@ -1,6 +1,6 @@
 # runs the whole kit and kaboodle
 
-# TODO: remove cache = TRUE functionality
+# TODO: PROFIT
 
 .libPaths("C:\\RPackages")
 
