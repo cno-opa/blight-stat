@@ -88,7 +88,7 @@ getAbatementReview <- function(){
 	return(list(d.nr = d.nr, d.hr = d.hr))
 }
 
-plotReviewProgress <- function(cache = FALSE){
+plotReviewProgress <- function(){
 	# plots review status of all cases within the relevant range (each month's bar is a snapshot from the hearings for that month's 6-month range)
 	# to save data, use cache = TRUE
 
@@ -143,7 +143,7 @@ plotReviewProgress <- function(cache = FALSE){
 
 	ggsave("./output/Abatement-Review-Progress.png", plot = p, width = 7.42, height = 5.75)
 }
-plotReviewProgress(cache = FALSE)
+plotReviewProgress()
 
 plotReviewBacklog <- function() {
 	d <- read.csv("./data/judgments-awaiting-review-backlog.csv")
