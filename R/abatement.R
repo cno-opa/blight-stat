@@ -195,7 +195,7 @@ plotSaleReview <- function(){
 
 	# get and process data
 	review <- read.csv("./data/Legal-Review.csv")
-	review$Month <- as.Date(review$Month, "%m/%d/%Y")
+	#review$Month <- as.Date(review$Month, "%m/%d/%Y")
 	review$Month <- as.factor(as.yearmon(review$Month))
 	cols <- grepl("Sales", names(review)) | grepl("Month", names(review))
 	sale <- review[, cols]
@@ -228,9 +228,9 @@ plotDemoReview <- function(){
 
 	# get and process data
 	review <- read.csv("./data/Legal-Review.csv")
-	review$Month <- as.Date(review$Month,  "%m/%d/%Y")
-	review <- subset(review, Month >= as.Date("2015-01-01"))
+	#review$Month <- as.Date(review$Month,  "%m/%d/%Y")
 	review$Month <- as.factor(as.yearmon(review$Month))
+	review <- filter(review, dateFromYearMon(Month) >= ymd("2015-01-01"))
 	cols <- grepl("Demo", names(review)) | grepl("Month", names(review))
 	sale <- review[, cols]
 	sale.melt <- melt(sale, id = "Month")
@@ -260,7 +260,7 @@ plotSSCollections <- function(){
 	# we have to manually update the Legal-Review.csv spreadsheet, with data sent by Code Enforcement
 
 	coll <- read.csv("./data/SheriffSaleCollections.csv")
-	coll$Month <- as.Date(coll$Month,"%m/%d/%Y")
+	#coll$Month <- as.Date(coll$Month,"%m/%d/%Y")
 	coll$Month <- as.factor(as.yearmon(coll$Month))
 	m <- melt(coll, id="Month")
 	m[is.na(m)] <- 0
@@ -366,7 +366,7 @@ mapDemos2015()
 
 plotCNAP <- function(){
 	cnap <- read.csv("./data/CNAP-Totals.csv")
-	cnap$Month <- as.Date(cnap$Month,"%m/%d/%Y")
+	#cnap$Month <- as.Date(cnap$Month,"%m/%d/%Y")
 	cnap$Month <- as.factor(as.yearmon(cnap$Month))
 
 	# make plots
